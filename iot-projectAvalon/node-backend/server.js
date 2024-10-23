@@ -3,13 +3,14 @@ const bodyParser = require('body-parser');
 const app = express();
 
 const port = 3001;
-const TIMEOUT_DURATION = 60000; // 1 menit
+const TIMEOUT_DURATION = 60000; // Timeout 1 menit
 
 let lastStatus = {
     status: "No Data",
     temperature: null,
     humidity: null,
-    timestamp: Date.now()  // Inisialisasi waktu default
+    soilMoisture: null,
+    timestamp: Date.now()  // Inisialisasi waktu terakhir
 };
 
 app.use(bodyParser.json());
@@ -17,9 +18,10 @@ app.use(bodyParser.json());
 // Endpoint untuk menerima data dari ESP32
 app.post('/status', (req, res) => {
     try {
-        const { status, temperature, humidity } = req.body;
+        const { status, temperature, humidity, soil } = req.body;
 
-        if (!status || temperature === undefined || humidity === undefined) {
+        // Validasi data yang diterima
+        if (!status || temperature === undefined || humidity === undefined || soil === undefined) {
             throw new Error('Invalid data format');
         }
 
@@ -27,9 +29,10 @@ app.post('/status', (req, res) => {
         lastStatus.status = status;
         lastStatus.temperature = temperature;
         lastStatus.humidity = humidity;
-        lastStatus.timestamp = Date.now();  // Update waktu terakhir data diterima
+        lastStatus.soilMoisture = soil;
+        lastStatus.timestamp = Date.now();  // Perbarui waktu terakhir data diterima
 
-        console.log(`Status received from ESP32: ${status}, Temperature: ${temperature}, Humidity: ${humidity}`);
+        console.log(`Status received from ESP32: ${status}, Temperature: ${temperature}, Humidity: ${humidity}, Soil Moisture: ${soil}`);
 
         // Kirim respons ke ESP32
         res.status(200).json({ message: 'Status received successfully' });
@@ -50,6 +53,7 @@ app.get('/status', (req, res) => {
             status: "Data Lost",
             temperature: null,
             humidity: null,
+            soilMoisture: null,
             message: "No data received from ESP32 within the last 60 seconds"
         });
     } else {

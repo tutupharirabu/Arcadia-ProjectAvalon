@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,12 +18,6 @@ Route::get('/', function () {
 });
 
 Route::get('/status', function () {
-    // Lakukan GET request ke server Node.js untuk mengambil data
-    $response = Http::get('http://localhost:3001/status');  // Pastikan IP dan port benar
-
-    // Ambil data dari respons
-    $data = $response->json();
-
-    // Kirim data ke view
-    return view('status', ['data' => $data]);
+    // Kembalikan view 'status' yang akan memuat data dari jQuery
+    return view('status');
 });
