@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,8 +23,8 @@ Route::get('/status', function () {
     $nodeServiceUrl = env('NODE_SERVICE_URL') . '/status';
 
     try {
+        // Lakukan GET request ke Node.js server dengan URL HTTPS
         $response = Http::get($nodeServiceUrl);
-        \Log::info('Response from Node.js:', ['response' => $response->json()]);
 
         if ($response->failed()) {
             return response()->json(['status' => 'error', 'message' => 'Failed to fetch data from Node.js'], 500);
@@ -31,7 +32,7 @@ Route::get('/status', function () {
 
         return response()->json($response->json());
     } catch (\Exception $e) {
-        \Log::error('Error fetching data from Node.js:', ['error' => $e->getMessage()]);
         return response()->json(['status' => 'error', 'message' => 'Could not fetch data from Node.js'], 500);
     }
 });
+
