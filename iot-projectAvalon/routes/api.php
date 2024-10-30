@@ -20,25 +20,21 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/status', function () {
-    // Retrieve data from Redis
-    $data = [
-        'status' => Redis::hget('lastStatus', 'status') ?? 'No Data',
-        'temperature' => Redis::hget('lastStatus', 'temperature') ?? 'N/A',
-        'humidity' => Redis::hget('lastStatus', 'humidity') ?? 'N/A',
-        'soilMoisture' => Redis::hget('lastStatus', 'soilMoisture') ?? 'N/A',
-        'timestamp' => Redis::hget('lastStatus', 'timestamp')
-    ];
+    $nodeServiceUrl = env('NODE_SERVICE_URL') . '/status';
 
-    // Check if any data is missing or outdated
-    if (!$data['status'] || !$data['temperature'] || !$data['humidity'] || !$data['soilMoisture']) {
-        return response()->json([
-            'status' => 'Data Lost',
-            'temperature' => null,
-            'humidity' => null,
-            'soilMoisture' => null,
-            'message' => 'No recent data available'
-        ]);
+    try {
+        // Make a GET request to the Node.js server
+        $response = Http::get($nodeServiceUrl);
+
+        // Check if the Node.js server returned an error
+        if ($response->failed()) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to fetch data from Node.js'], 500);
+        }
+
+        // Return the data received from Node.js
+        return response()->json($response->json());
+    } catch (\Exception $e) {
+        // Handle connection errors
+        return response()->json(['status' => 'error', 'message' => 'Could not fetch data from Node.js'], 500);
     }
-
-    return response()->json($data);
 });
