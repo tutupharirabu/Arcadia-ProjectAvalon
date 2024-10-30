@@ -20,10 +20,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/status', function () {
-    $nodeServiceUrl = env('NODE_SERVICE_URL') . '/status';
+    $nodeServiceUrl = 'https://serverjs-project-avalon-dev.up.railway.app/status';
 
     try {
-        // Lakukan GET request ke Node.js server dengan URL HTTPS
         $response = Http::get($nodeServiceUrl);
 
         if ($response->failed()) {
