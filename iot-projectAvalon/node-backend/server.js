@@ -1,40 +1,47 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const redis = require('redis');
 const app = express();
 
-const port = 3001;
-const TIMEOUT_DURATION = 60000; // Timeout 1 menit
+// Use Railway's dynamic port assignment, with fallback for local development
+const port = process.env.PORT;
+const TIMEOUT_DURATION = 60000; // Timeout of 1 minute
 
-let lastStatus = {
-    status: "No Data",
-    temperature: null,
-    humidity: null,
-    soilMoisture: null,
-    timestamp: Date.now()  // Inisialisasi waktu terakhir
-};
+// Set up Redis client
+const redisClient = redis.createClient({
+    url: process.env.REDIS_URL,  // Use Redis URL from Railway environment variables
+    socket: {
+        reconnectStrategy: () => 1000, // Reconnect every 1 second on connection loss
+    }
+});
+
+// Connect to Redis
+redisClient.connect().catch(console.error);
 
 app.use(bodyParser.json());
 
-// Endpoint untuk menerima data dari ESP32
-app.post('/status', (req, res) => {
+// Endpoint to receive data from ESP32
+app.post('/status', async (req, res) => {
     try {
         const { status, temperature, humidity, soil } = req.body;
 
-        // Validasi data yang diterima
+        // Validate incoming data
         if (!status || temperature === undefined || humidity === undefined || soil === undefined) {
             throw new Error('Invalid data format');
         }
 
-        // Update status terakhir dari ESP32
-        lastStatus.status = status;
-        lastStatus.temperature = temperature;
-        lastStatus.humidity = humidity;
-        lastStatus.soilMoisture = soil;
-        lastStatus.timestamp = Date.now();  // Perbarui waktu terakhir data diterima
+        // Store data in Redis as a hash
+        await redisClient.hSet('lastStatus', {
+            status,
+            temperature,
+            humidity,
+            soilMoisture: soil,
+            timestamp: Date.now()
+        });
 
-        console.log(`Status received from ESP32: ${status}, Temperature: ${temperature}, Humidity: ${humidity}, Soil Moisture: ${soil}`);
+        console.log(`Data received: Status: ${status}, Temperature: ${temperature}, Humidity: ${humidity}, Soil Moisture: ${soil}`);
 
-        // Kirim respons ke ESP32
+        // Respond to ESP32
         res.status(200).json({ message: 'Status received successfully' });
     } catch (error) {
         console.error(`Error receiving data from ESP32: ${error.message}`);
@@ -42,27 +49,53 @@ app.post('/status', (req, res) => {
     }
 });
 
-// Endpoint untuk mengambil status terakhir dari ESP32
-app.get('/status', (req, res) => {
-    const currentTime = Date.now();
-    const timeDifference = currentTime - lastStatus.timestamp;
+// Endpoint to get the latest status from ESP32
+app.get('/status', async (req, res) => {
+    try {
+        // Retrieve the last status from Redis
+        const lastStatus = await redisClient.hGetAll('lastStatus');
 
-    // Jika data terakhir lebih dari TIMEOUT_DURATION (1 menit) tidak diperbarui
-    if (timeDifference > TIMEOUT_DURATION) {
-        res.json({
-            status: "Data Lost",
-            temperature: null,
-            humidity: null,
-            soilMoisture: null,
-            message: "No data received from ESP32 within the last 60 seconds"
-        });
-    } else {
-        // Kirim status terakhir yang diterima dari ESP32 ke Laravel
-        res.json(lastStatus);
+        // If no data is found in Redis
+        if (!lastStatus || Object.keys(lastStatus).length === 0) {
+            return res.json({
+                status: "No Data",
+                temperature: null,
+                humidity: null,
+                soilMoisture: null,
+                message: "No data received yet"
+            });
+        }
+
+        // Calculate time difference
+        const currentTime = Date.now();
+        const timeDifference = currentTime - parseInt(lastStatus.timestamp, 10);
+
+        // If data is older than TIMEOUT_DURATION
+        if (timeDifference > TIMEOUT_DURATION) {
+            res.json({
+                status: "Data Lost",
+                temperature: null,
+                humidity: null,
+                soilMoisture: null,
+                message: "No data received from ESP32 within the last 60 seconds"
+            });
+        } else {
+            // Send the cached status from Redis
+            res.json({
+                status: lastStatus.status,
+                temperature: parseFloat(lastStatus.temperature),
+                humidity: parseFloat(lastStatus.humidity),
+                soilMoisture: parseFloat(lastStatus.soilMoisture),
+                timestamp: parseInt(lastStatus.timestamp, 10)
+            });
+        }
+    } catch (error) {
+        console.error(`Error retrieving data: ${error.message}`);
+        res.status(500).json({ error: 'Error retrieving data from Redis' });
     }
 });
 
-// Jalankan server di port yang ditentukan
+// Start the server
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+    console.log(`Server running on port ${port}`);
 });

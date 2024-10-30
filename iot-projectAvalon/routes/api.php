@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,14 +20,25 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/status', function () {
-    try {
-        // Lakukan GET request ke server Node.js
-        $response = Http::get('http://192.168.43.122:3001/status');  // Sesuaikan dengan IP server Node.js Anda
+    // Retrieve data from Redis
+    $data = [
+        'status' => Redis::hget('lastStatus', 'status') ?? 'No Data',
+        'temperature' => Redis::hget('lastStatus', 'temperature'),
+        'humidity' => Redis::hget('lastStatus', 'humidity'),
+        'soilMoisture' => Redis::hget('lastStatus', 'soilMoisture'),
+        'timestamp' => Redis::hget('lastStatus', 'timestamp'),
+    ];
 
-        // Ambil data dari respons dan kirim dalam format JSON
-        return response()->json($response->json());
-    } catch (\Exception $e) {
-        // Jika terjadi error, kirimkan pesan error
-        return response()->json(['status' => 'error', 'message' => 'Could not fetch data from ESP32']);
+    // If Redis data is empty or outdated, handle accordingly
+    if (!$data['status'] || !$data['temperature'] || !$data['humidity'] || !$data['soilMoisture']) {
+        return response()->json([
+            'status' => 'Data Lost',
+            'temperature' => null,
+            'humidity' => null,
+            'soilMoisture' => null,
+            'message' => 'No recent data available'
+        ]);
     }
+
+    return response()->json($data);
 });
