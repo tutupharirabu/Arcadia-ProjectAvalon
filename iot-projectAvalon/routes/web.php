@@ -33,12 +33,13 @@ Route::get('/iot-data-status', function () {
 
         return view('status-iot-data', compact('data'));
     } catch (\Exception $e) {
+        \Log::error('Error fetching data from Redis: ' . $e->getMessage());
         $data = [
-            'status' => 'Error fetching data',
-            'temperature' => null,
-            'humidity' => null,
-            'soilMoisture' => null,
-            'timestamp' => null,
+            'status' => 'Error fetching data from Laravel API.',
+            'temperature' => 'N/A',
+            'humidity' => 'N/A',
+            'soilMoisture' => 'N/A',
+            'timestamp' => 'No Data',
         ];
 
         return view('status-iot-data', compact('data'));
