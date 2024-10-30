@@ -13,23 +13,54 @@ const redisClient = redis.createClient({
 
 redisClient.connect()
     .then(() => console.log("Connected to Redis"))
-    .catch(err => console.error("Redis connection error:", err));
+    .catch((err) => console.error("Redis connection error:", err));
 
 app.use(bodyParser.json());
 
-// Endpoint status
+// Endpoint untuk menerima data dari ESP32
+app.post('/status', async (req, res) => {
+    try {
+        const { status, temperature, humidity, soil } = req.body;
+
+        if (!status || temperature === undefined || humidity === undefined || soil === undefined) {
+            throw new Error('Invalid data format');
+        }
+
+        const lastStatus = {
+            status,
+            temperature,
+            humidity,
+            soilMoisture: soil,
+            timestamp: Date.now()
+        };
+
+        await redisClient.hSet('lastStatus', lastStatus);
+
+        console.log(`Status received from ESP32: ${status}, Temperature: ${temperature}, Humidity: ${humidity}, Soil Moisture: ${soil}`);
+        res.status(200).json({ message: 'Status received successfully' });
+    } catch (error) {
+        console.error(`Error receiving data from ESP32: ${error.message}`);
+        res.status(400).json({ error: 'Invalid data format or missing fields' });
+    }
+});
+
+// Endpoint untuk mengambil status terakhir dari ESP32
 app.get('/status', async (req, res) => {
     try {
-        const statusData = {
-            status: await redisClient.get('status') || 'OK',
-            temperature: await redisClient.get('temperature') || 'N/A',
-            humidity: await redisClient.get('humidity') || 'N/A',
-            soilMoisture: await redisClient.get('soilMoisture') || 'N/A',
-            timestamp: await redisClient.get('timestamp') || Date.now(),
-        };
-        res.json(statusData);
+        const lastStatus = await redisClient.hGetAll('lastStatus');
+        if (!lastStatus || !lastStatus.timestamp || Date.now() - lastStatus.timestamp > TIMEOUT_DURATION) {
+            res.json({
+                status: "Data Lost",
+                temperature: null,
+                humidity: null,
+                soilMoisture: null,
+                message: "No data received from ESP32 within the last 60 seconds"
+            });
+        } else {
+            res.json(lastStatus);
+        }
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Failed to fetch data from Redis' });
+        res.status(500).json({ error: 'Failed to retrieve data from Redis' });
     }
 });
 

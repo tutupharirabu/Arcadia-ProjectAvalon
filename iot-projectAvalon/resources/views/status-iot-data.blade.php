@@ -54,9 +54,10 @@
             // URL API Laravel
             const apiUrl = @json(url('/api/status'));
 
-            // Mengganti URL menjadi HTTPS di file HTML atau JavaScript
+            // Function to fetch data from Laravel API and update the view
             function fetchData() {
-                $.get('{{ url("/api/status") }}', function(data) {
+                $.get(apiUrl, function(data) {
+                    // If data is valid, update the view with the fetched data
                     if (data.status === 'Data Lost') {
                         $('#status').text('No data received from ESP32 within the last 60 seconds.');
                         $('#temperature').text('N/A');
@@ -68,13 +69,23 @@
                         $('#humidity').text(data.humidity + " %");
                         $('#soilMoisture').text(data.soilMoisture + " %");
                     }
-                }).fail(function() {
+                }).fail(function(jqXHR, textStatus, errorThrown) {
+                    // Error handling if the data fetch fails
+                    console.error("Failed to fetch data:", textStatus, errorThrown);
                     $('#status').text('Error fetching data from Laravel API.');
                     $('#temperature').text('N/A');
                     $('#humidity').text('N/A');
                     $('#soilMoisture').text('N/A');
                 });
-}
+            }
+
+            // Fetch data every 5 seconds
+            setInterval(fetchData, 5000);
+
+            // Initial data fetch when the page loads
+            $(document).ready(function() {
+                fetchData();
+            });
         </script>
     </head>
     <body>
