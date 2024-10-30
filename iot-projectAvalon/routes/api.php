@@ -22,18 +22,16 @@ Route::get('/status', function () {
     $nodeServiceUrl = env('NODE_SERVICE_URL') . '/status';
 
     try {
-        // Make a GET request to the Node.js server
         $response = Http::get($nodeServiceUrl);
+        \Log::info('Response from Node.js:', ['response' => $response->json()]);
 
-        // Check if the Node.js server returned an error
         if ($response->failed()) {
             return response()->json(['status' => 'error', 'message' => 'Failed to fetch data from Node.js'], 500);
         }
 
-        // Return the data received from Node.js
         return response()->json($response->json());
     } catch (\Exception $e) {
-        // Handle connection errors
+        \Log::error('Error fetching data from Node.js:', ['error' => $e->getMessage()]);
         return response()->json(['status' => 'error', 'message' => 'Could not fetch data from Node.js'], 500);
     }
 });
