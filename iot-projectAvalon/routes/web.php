@@ -19,7 +19,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/iot-data', function () {
+Route::get('/iot-data-status', function () {
     try {
         // Attempt to retrieve data from Redis
         $data = [
