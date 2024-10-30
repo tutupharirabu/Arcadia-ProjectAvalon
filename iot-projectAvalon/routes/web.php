@@ -21,7 +21,6 @@ Route::get('/', function () {
 
 Route::get('/iot-data-status', function () {
     try {
-        // Attempt to retrieve data from Redis
         $data = [
             'status' => Redis::hget('lastStatus', 'status') ?? 'No Data',
             'temperature' => Redis::hget('lastStatus', 'temperature') ?? 'N/A',
@@ -32,17 +31,16 @@ Route::get('/iot-data-status', function () {
                 : 'No Data',
         ];
 
+        return view('status-iot-data', compact('data'));
     } catch (\Exception $e) {
-        // In case of an error, return a default response or error message
         $data = [
             'status' => 'Error fetching data',
-            'temperature' => 'N/A',
-            'humidity' => 'N/A',
-            'soilMoisture' => 'N/A',
-            'timestamp' => 'N/A',
+            'temperature' => null,
+            'humidity' => null,
+            'soilMoisture' => null,
+            'timestamp' => null,
         ];
-    }
 
-    // Pass data to the view with the updated name
-    return view('status-iot-data', compact('data'));
+        return view('status-iot-data', compact('data'));
+    }
 });
