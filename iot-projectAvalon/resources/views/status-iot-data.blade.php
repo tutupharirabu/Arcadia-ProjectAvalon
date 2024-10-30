@@ -51,9 +51,12 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
         <script>
+            // URL API Laravel
+            const apiUrl = @json(url('/api/status'));
+
             // Function to fetch data from Laravel API and update the view
             function fetchData() {
-                $.get('{{ url("/api/status") }}', function(data) {
+                $.get(apiUrl, function(data) {
                     // If data is valid, update the view with the fetched data
                     if (data.status === 'Data Lost') {
                         $('#status').text('No data received from ESP32 within the last 60 seconds.');
@@ -66,8 +69,9 @@
                         $('#humidity').text(data.humidity + " %");
                         $('#soilMoisture').text(data.soilMoisture + " %");
                     }
-                }).fail(function() {
+                }).fail(function(jqXHR, textStatus, errorThrown) {
                     // Error handling if the data fetch fails
+                    console.error("Failed to fetch data:", textStatus, errorThrown);
                     $('#status').text('Error fetching data from Laravel API.');
                     $('#temperature').text('N/A');
                     $('#humidity').text('N/A');
