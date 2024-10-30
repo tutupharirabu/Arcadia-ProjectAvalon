@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const redis = require('redis');
 const app = express();
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT;
 const TIMEOUT_DURATION = 60000; // Timeout of 1 minute
 
 // Initialize Redis client with Redis URL from environment variables
