@@ -23,13 +23,13 @@ Route::get('/status', function () {
     // Retrieve data from Redis
     $data = [
         'status' => Redis::hget('lastStatus', 'status') ?? 'No Data',
-        'temperature' => Redis::hget('lastStatus', 'temperature'),
-        'humidity' => Redis::hget('lastStatus', 'humidity'),
-        'soilMoisture' => Redis::hget('lastStatus', 'soilMoisture'),
-        'timestamp' => Redis::hget('lastStatus', 'timestamp'),
+        'temperature' => Redis::hget('lastStatus', 'temperature') ?? 'N/A',
+        'humidity' => Redis::hget('lastStatus', 'humidity') ?? 'N/A',
+        'soilMoisture' => Redis::hget('lastStatus', 'soilMoisture') ?? 'N/A',
+        'timestamp' => Redis::hget('lastStatus', 'timestamp')
     ];
 
-    // If Redis data is empty or outdated, handle accordingly
+    // Check if any data is missing or outdated
     if (!$data['status'] || !$data['temperature'] || !$data['humidity'] || !$data['soilMoisture']) {
         return response()->json([
             'status' => 'Data Lost',
