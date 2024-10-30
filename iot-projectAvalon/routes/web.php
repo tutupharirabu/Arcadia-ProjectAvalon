@@ -21,19 +21,17 @@ Route::get('/', function () {
 
 Route::get('/iot-data-status', function () {
     try {
-        $data = [
-            'status' => Redis::hget('lastStatus', 'status') ?? 'No Data',
-            'temperature' => Redis::hget('lastStatus', 'temperature') ?? 'N/A',
-            'humidity' => Redis::hget('lastStatus', 'humidity') ?? 'N/A',
-            'soilMoisture' => Redis::hget('lastStatus', 'soilMoisture') ?? 'N/A',
-            'timestamp' => Redis::hget('lastStatus', 'timestamp')
-                ? Carbon::createFromTimestampMs(Redis::hget('lastStatus', 'timestamp'))->toDateTimeString()
-                : 'No Data',
-        ];
+        // Ambil data dari API Laravel yang memanggil Node.js
+        $response = Http::get(url('/api/status'));
 
+        if ($response->failed()) {
+            throw new \Exception('Failed to fetch data from Laravel API');
+        }
+
+        $data = $response->json();
         return view('status-iot-data', compact('data'));
     } catch (\Exception $e) {
-        \Log::error('Error fetching data from Redis: ' . $e->getMessage());
+        \Log::error('Error fetching data from Laravel API: ' . $e->getMessage());
         $data = [
             'status' => 'Error fetching data from Laravel API.',
             'temperature' => 'N/A',
