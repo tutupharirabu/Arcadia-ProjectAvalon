@@ -26,15 +26,13 @@ app.post('/status', async (req, res) => {
             throw new Error('Invalid data format');
         }
 
-        const lastStatus = {
-            status,
-            temperature,
-            humidity,
+        await redisClient.hSet('lastStatus', {
+            status: status,
+            temperature: temperature,
+            humidity: humidity,
             soilMoisture: soil,
             timestamp: Date.now()
-        };
-
-        await redisClient.hSet('lastStatus', lastStatus);
+        });
 
         console.log(`Status received from ESP32: ${status}, Temperature: ${temperature}, Humidity: ${humidity}, Soil Moisture: ${soil}`);
         res.status(200).json({ message: 'Status received successfully' });
