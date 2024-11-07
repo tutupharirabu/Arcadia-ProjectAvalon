@@ -18,7 +18,7 @@ redisClient.connect()
 app.use(bodyParser.json());
 
 // Endpoint untuk menerima data dari ESP32
-app.post('/status', async (req, res) => {
+app.post('/status-receive', async (req, res) => {
     try {
         const { status, temperature, humidity, soil } = req.body;
 
@@ -43,7 +43,7 @@ app.post('/status', async (req, res) => {
 });
 
 // Endpoint untuk mengambil status terakhir dari ESP32
-app.get('/status', async (req, res) => {
+app.get('/status-check', async (req, res) => {
     try {
         const lastStatus = await redisClient.hGetAll('lastStatus');
         if (!lastStatus || !lastStatus.timestamp || Date.now() - lastStatus.timestamp > TIMEOUT_DURATION) {
