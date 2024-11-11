@@ -4,7 +4,7 @@ const redis = require('redis');
 
 const app = express();
 const port = process.env.PORT || 8080;
-const TIMEOUT_DURATION = 60000; // Timeout 1 minute
+const TIMEOUT_DURATION = 60000; // Timeout 1 menit
 
 // Initialize Redis Client with Redis URL from environment variables
 const redisClient = redis.createClient({
@@ -17,7 +17,7 @@ redisClient.connect()
 
 app.use(bodyParser.json());
 
-// Endpoint to receive data from ESP32
+// Endpoint untuk menerima data dari ESP32
 app.post('/status-receive', async (req, res) => {
     try {
         const { status, temperature, humidity, soil } = req.body;
@@ -42,7 +42,7 @@ app.post('/status-receive', async (req, res) => {
     }
 });
 
-// Endpoint to check the last status from ESP32
+// Endpoint untuk mengambil status terakhir dari ESP32
 app.get('/status-check', async (req, res) => {
     try {
         const lastStatus = await redisClient.hGetAll('lastStatus');
@@ -63,5 +63,5 @@ app.get('/status-check', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+    console.log(`Server running on https://localhost:${port}`);
 });

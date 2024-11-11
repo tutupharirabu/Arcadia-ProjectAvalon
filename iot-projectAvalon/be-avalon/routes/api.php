@@ -20,7 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/status', function () {
-    $nodeServiceUrl = 'https://serverjs-project-avalon-dev.up.railway.app/status-check';
+    $nodeServiceUrl = 'https://serverjs-project-avalon-dev.up.railway.app/status';
 
     try {
         $response = Http::get($nodeServiceUrl);
