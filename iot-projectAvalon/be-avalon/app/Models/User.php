@@ -5,7 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use App\Models\Role;
-use App\Models\OTP_codes;
+use App\Models\Otp_codes;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -20,7 +20,7 @@ class User extends Authenticatable implements JWTSubject
     public static function boot() {
         parent::boot();
 
-        static::creating(function ($model) {
+        static::created(function ($model) {
             $model->generateOtpCodeData($model);
         });
     }
@@ -29,7 +29,7 @@ class User extends Authenticatable implements JWTSubject
         $randomNumber = mt_rand(100000, 999999);
         $now = Carbon::now();
 
-        $otp = OTP_codes::updateOrCreate(
+        $otp = Otp_codes::updateOrCreate(
             ['users_id' => $user->users_id],
             [
                 'otp_code' => $randomNumber,
@@ -75,12 +75,12 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    public function getJWTIdentifier(): int
+    public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims(): array
+    public function getJWTCustomClaims()
     {
         return [];
     }
@@ -92,6 +92,6 @@ class User extends Authenticatable implements JWTSubject
 
     public function otpCode()
     {
-        return $this->hasOne(OTP_codes::class, 'users_id');
+        return $this->hasOne(Otp_codes::class, 'users_id');
     }
 }

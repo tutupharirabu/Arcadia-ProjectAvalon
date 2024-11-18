@@ -4,15 +4,17 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Models\OTP_codes;
+use App\Models\Otp_codes;
 use Illuminate\Http\Request;
 use App\Mail\RegisterMailSend;
 use Illuminate\Support\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -28,13 +30,13 @@ class AuthController extends Controller
             return response()->json(['error' => $validatedData->errors()], 400);
         }
 
-        $roleData = Role::where('title', 'user')->first();
+        $roleData = Role::where('title', 'petani')->first();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => $roleData->roles_id,
+            'password' => Hash::make($request->password),
+            'roles_id' => $roleData->roles_id,
         ]);
 
         $user->generateOtpCodeData($user);
@@ -61,6 +63,7 @@ class AuthController extends Controller
 
         return response([
             'message' => "Berhasil generate OTP code!",
+            'otp_code' => $user->otpCode->otp_code,
         ], 200);
     }
 
@@ -69,7 +72,7 @@ class AuthController extends Controller
             'otp_code' => 'required|numeric',
         ]);
 
-        $otp = OTP_codes::where('otp_code', $request->otp_code)->first();
+        $otp = Otp_codes::where('otp_code', $request->otp_code)->first();
 
         if (!$otp) {
             return response([
@@ -94,15 +97,15 @@ class AuthController extends Controller
         ], 200);
     }
 
-    // public function getUser() {
-    //     $currentUser = auth()->user();
-    //     $dataUser = User::with('profile')->find($currentUser->users_id);
+    public function getUser() {
+        $currentUser = auth()->user();
+        $dataUser = User::with('profile')->find($currentUser->users_id);
 
-    //     return response()->json([
-    //         'message' => 'Berhasil menampilkan data user!',
-    //         'data' => $dataUser,
-    //     ], 200);
-    // }
+        return response()->json([
+            'message' => 'Berhasil menampilkan data user!',
+            'data' => $dataUser,
+        ], 200);
+    }
 
     public function login (Request $request) {
         $request->validate([
@@ -120,22 +123,18 @@ class AuthController extends Controller
         }
 
         $data = User::where('email', $request->email)
-            ->with(['profile', 'role'])
+            ->with(['role'])
             ->first();
 
         return response([
             "message" => "Login berhasil!",
             "user" => [
-                "id" => $data->id,
+                "id" => $data->users_id,
                 "name" => $data->name,
                 "email" => $data->email,
-                "role" => $data->role ? $data->role->name : 'No Role Assigned',
-                "profile" => [
-                    "bio" => $data->profile ? $data->profile->bio : null,
-                    "umur" => $data->profile ? $data->profile->umur : null,
-                ],
+                "role" => $data->roles_id ?  Str::ucfirst($data->role->title) : 'No Role Assigned',
             ],
-            "token" => $token
+            "token" => $token,
         ], 200);
     }
 

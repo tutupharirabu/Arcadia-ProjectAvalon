@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->uuid('roles_id');
-            $table->foreign('roles_id')->references('roles_id')->on('roles')->onDelete('cascade');
+            $table->foreign('roles_id')->references('roles_id')->on('roles');
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();
         });
