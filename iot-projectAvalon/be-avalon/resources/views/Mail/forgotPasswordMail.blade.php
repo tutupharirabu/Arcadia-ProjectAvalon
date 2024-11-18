@@ -84,18 +84,18 @@
         <!-- Content -->
         <div class="content">
             <h1>Hi {{ $name }},</h1>
-            <p>Here's the confirmation code you requested:</p>
+            <p>You requested to reset your password.</p>
+            <p>Use the following OTP code to proceed with your password reset:</p>
             <p class="confirmation-code">{{ $otp }}</p>
-            <p style="color: #888888; font-size: 14px;">This code is valid for 5 minutes from now.</p>
-            <p>If you didn't request this, you can ignore this email or let us know.</p>
+            <p style="color: #888888; font-size: 14px;">This code is valid for 5 minutes. Please do not share it with anyone.</p>
+            <p>If you didn’t request a password reset, please ignore this email or contact our support team immediately.</p>
             <p>Thanks,<br>The Arcadia Flora Team</p>
         </div>
-
 
         <!-- Footer -->
         <div class="footer">
             <p>© 2024 Arcadia Flora. All rights reserved.</p>
-            <p><a href="#">Contact Us</a></p>
+            <p><a href="#">Contact Us</a> | <a href="#">Privacy Policy</a></p>
         </div>
     </div>
 </body>
