@@ -3,14 +3,40 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\Carbon;
+use App\Models\Role;
+use App\Models\OTP_codes;
+use Illuminate\Notifications\Notifiable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasUuids;
+
+    public static function boot() {
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->generateOtpCodeData($model);
+        });
+    }
+
+    public function generateOtpCodeData($user) {
+        $randomNumber = mt_rand(100000, 999999);
+        $now = Carbon::now();
+
+        $otp = OTP_codes::updateOrCreate(
+            ['users_id' => $user->users_id],
+            [
+                'otp_code' => $randomNumber,
+                'valid_until' => $now->addMinutes(5),
+            ]
+        );
+    }
 
     protected $primaryKey = 'users_id';
     protected $table = 'users';
@@ -24,7 +50,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        'roles_id',
     ];
 
     /**
@@ -57,5 +83,15 @@ class User extends Authenticatable
     public function getJWTCustomClaims(): array
     {
         return [];
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'roles_id');
+    }
+
+    public function otpCode()
+    {
+        return $this->hasOne(OTP_codes::class, 'users_id');
     }
 }

@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->string('role');
-            $table->foreign('role')->references('roles_id')->on('roles')->onDelete('cascade');
+            $table->uuid('roles_id');
+            $table->foreign('roles_id')->references('roles_id')->on('roles')->onDelete('cascade');
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();
         });
