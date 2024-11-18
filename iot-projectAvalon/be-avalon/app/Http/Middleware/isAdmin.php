@@ -18,9 +18,9 @@ class isAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $currentUser = Auth::guard('api')->user();
-        $roleAdminIds = Role::whereIn('title', ['admin', 'super-admin'])->pluck('id')->toArray();
+        $roleAdminIds = Role::whereIn('title', ['admin', 'super-admin'])->pluck('roles_id')->toArray();
 
-        if (in_array($currentUser->role_id, $roleAdminIds)) {
+        if (in_array($currentUser->roles_id, $roleAdminIds)) {
             return $next($request);
         }
 
