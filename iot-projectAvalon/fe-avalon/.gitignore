@@ -28,3 +28,4 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+fe-avalon/node_modules/
