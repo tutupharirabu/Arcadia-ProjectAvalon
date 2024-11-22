@@ -18,7 +18,7 @@
             :class="{ 'border-pink-600': selectedTab === 'whatWeDo' }"
             class="tab-btn border-2 border-transparent hover:border-pink-600 py-2 px-6 text-pink-600 font-medium rounded-full focus:outline-none"
           >
-            What We Do
+            Our Products
           </button>
           <button
             @click="switchTab('visionMission')"
@@ -44,20 +44,176 @@
           :key="selectedTab"
         >
           <div v-if="selectedTab === 'whatWeDo'">
-            <p>
-              testtesttestetsttesttetstetettsttstsetsttstes
-            </p>
+            <div class="relative bg-product-section">
+                <div class="container mx-auto px-4 text-center">
+                  <h2 class="about-title text-3xl font-bold text-pink-600" data-aos="fade-right">
+                    Our Products 
+                  </h2>
+                  <p class="text-gray-600 mb-10">
+                    End-to-end precise control of your farm
+                  </p>
+                  <div class="container mx-auto px-4 mt-12">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <!-- Card 1 -->
+                      <div
+                        class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105"
+                        data-aos="fade-up"
+                        data-aos-delay="0"
+                      >
+                        <div
+                          class="overflow-hidden rounded-lg"
+                          style="height: 200px;"
+                        >
+                          <img
+                            src="@/assets/aquaflow.png"
+                            alt="Integrated IoT Sensors"
+                            class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                          />
+                        </div>
+                        <h3 class="mt-4 text-xl font-semibold text-gray-800">
+                          Aquaflow
+                        </h3>
+                        <p class="mt-2 text-gray-600">
+                          testtesttestetsttesttetstetettsttstsetsttstes
+                        </p>
+                      </div>
+
+                      <!-- Card 2 -->
+                      <div
+                        class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105"
+                        data-aos="fade-up"
+                        data-aos-delay="200"
+                      >
+                        <div
+                          class="overflow-hidden rounded-lg"
+                          style="height: 200px;"
+                        >
+                          <img
+                            src="@/assets/backgroundwebsite.png"
+                            alt="Smart Dashboard"
+                            class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                          />
+                        </div>
+                        <h3 class="mt-4 text-xl font-semibold text-gray-800">
+                          Produk 2
+                        </h3>
+                        <p class="mt-2 text-gray-600">
+                          testtesttestetsttesttetstetettsttstsetsttstes
+                          testtesttestetsttesttetstetettsttstsetsttstes
+                        </p>
+                      </div>
+
+                      <!-- Card 3 -->
+                      <div
+                        class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105"
+                        data-aos="fade-up"
+                        data-aos-delay="400"
+                      >
+                        <div
+                          class="overflow-hidden rounded-lg"
+                          style="height: 200px;"
+                        >
+                          <img
+                            src="@/assets/backgroundwebsite.png"
+                            alt="Integrated Controller"
+                            class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                          />
+                        </div>
+                        <h3 class="mt-4 text-xl font-semibold text-gray-800">
+                          Produk 3
+                        </h3>
+                        <p class="mt-2 text-gray-600">
+                          testtesttestetsttesttetstetettsttstsetsttstes
+                          testtesttestetsttesttetstetettsttstsetsttstes
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
           <div v-if="selectedTab === 'visionMission'">
             <p>
               testtesttestetsttesttetstetettsttstsetsttstes
             </p>
           </div>
-          <div v-if="selectedTab === 'ourPillar'">
-            <p>
-              testtesttestetsttesttetstetettsttstsetsttstes
-            </p>
-          </div>
+            <div v-if="selectedTab === 'ourPillar'">
+
+              <div class="container mx-auto px-4 mt-12">
+                <div>
+                <h2 class="about-title text-3xl font-bold text-pink-600"
+                > Our Pillar</h2>
+              </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <!-- Card 1 -->
+                  <div
+                    class="bg-pink-100 p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105 text-center"
+                    data-aos="fade-up"
+                    data-aos-delay="0"
+                  >
+                    <div
+                      class="overflow-hidden rounded-lg mx-auto mb-4"
+                      style="height: 150px; width: 100%; max-width: 250px;"
+                    >
+                      <img
+                        src="@/assets/Frame 4.png"
+                        alt="Edukasi"
+                        class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                      />
+                    </div>
+                    <h3 class="text-xl font-semibold text-pink-700">Edukasi</h3>
+                    <p class="mt-2 text-pink-600">
+                      Memberikan pengetahuan praktis tentang cara bercocok tanam dengan teknologi modern.
+                    </p>
+                  </div>
+
+                  <!-- Card 2 -->
+                  <div
+                    class="bg-pink-100 p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105 text-center"
+                    data-aos="fade-up"
+                    data-aos-delay="200"
+                  >
+                    <div
+                      class="overflow-hidden rounded-lg mx-auto mb-4"
+                      style="height: 150px; width: 100%; max-width: 250px;"
+                    >
+                      <img
+                        src="@/assets/Frame 4.png"
+                        alt="Pemberdayaan"
+                        class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                      />
+                    </div>
+                    <h3 class="text-xl font-semibold text-pink-700">Pemberdayaan</h3>
+                    <p class="mt-2 text-pink-600">
+                      Mendukung petani melalui pelatihan dan solusi untuk kemandirian.
+                    </p>
+                  </div>
+
+                  <!-- Card 3 -->
+                  <div
+                    class="bg-pink-100 p-6 rounded-lg shadow-md hover:shadow-lg transform transition duration-300 hover:scale-105 text-center"
+                    data-aos="fade-up"
+                    data-aos-delay="400"
+                  >
+                    <div
+                      class="overflow-hidden rounded-lg mx-auto mb-4"
+                      style="height: 150px; width: 100%; max-width: 250px;"
+                    >
+                      <img
+                        src="@/assets/Frame 4.png"
+                        alt="Teknologi Tepat Guna"
+                        class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                      />
+                    </div>
+                    <h3 class="text-xl font-semibold text-pink-700">Teknologi Tepat Guna</h3>
+                    <p class="mt-2 text-pink-600">
+                      Menyediakan perangkat IoT untuk mendukung pertanian efisien.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
         </div>
       </div>
     </div>
@@ -99,10 +255,10 @@ export default {
 <style scoped>
 /* Gaya latar belakang untuk section */
 .bg-product-section {
-  background-image: url("@/assets/product.png"); /* Ganti dengan gambar Anda */
+  /* background-image: url("@/assets/product.png"); 
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: fixed; */
 }
 
 /* Gaya untuk Judul */

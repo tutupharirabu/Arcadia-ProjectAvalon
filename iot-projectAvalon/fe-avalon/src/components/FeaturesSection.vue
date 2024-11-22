@@ -1,7 +1,7 @@
 <template>
   <section id="product">
     <!-- Background Image -->
-    <div class="relative bg-product-section py-16 bg-gray-100">
+    <div class="relative bg-product-section">
       <div class="container mx-auto px-4 text-center">
         <h2 class="about-title text-3xl font-bold text-pink-600" data-aos="fade-right">
           Our Products 
@@ -99,10 +99,10 @@ export default {
 
 <style scoped>
 .bg-product-section {
-  background-image: url('@/assets/product.png'); /* Gambar sama untuk kedua section */
+  /* background-image: url('@/assets/tutupback.png');
   background-size: cover;
-  background-position: center; /* Pastikan posisi sama */
-  background-attachment: fixed; /* Untuk efek seamless */
+  background-position: center; 
+  background-attachment: fixed; */
 }
 
 .about-title {

@@ -1,5 +1,16 @@
 <template>
-    <section id="team" class="py-16 bg-gray-50">
+    <section id="team" class="py-16">
+          <!-- Logo Pojok Kiri dan Kanan -->
+      <img
+        src="@/assets/bungagede.png"
+        alt="Logo"
+        class="logo-left"
+      />
+      <img
+        src="@/assets/bungagede.png"
+        alt="Logo"
+        class="logo-right"
+      />
       <div class="container mx-auto text-center" data-aos="fade-up" data-aos-delay="300">
         <h2 class="text-3xl font-bold mb-8 text-pink-600">Meet Our Team</h2>
         <p class="text-gray-600 mb-12">
@@ -72,5 +83,36 @@
       transform: translateY(0);
     }
   }
+
+  @keyframes rotate-logo {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Penempatan dan animasi logo kiri */
+.logo-left {
+  position: absolute;
+  bottom: 1;
+  left: 0;
+  transform-origin: center;
+  animation: rotate-logo 10s linear infinite;
+  width: 120px; /* Atur ukuran logo */
+  margin-left: 350px;
+}
+
+/* Penempatan dan animasi logo kanan */
+.logo-right {
+  position: absolute;
+  bottom: 1;
+  right: 0;
+  transform-origin: center;
+  animation: rotate-logo 10s linear infinite;
+  width: 120px; /* Atur ukuran logo */
+  margin-right: 350px;
+}
   </style>
   

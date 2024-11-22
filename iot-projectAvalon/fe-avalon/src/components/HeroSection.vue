@@ -1,9 +1,9 @@
 <template>
   <section id="home" class="relative bg-[#fc819e] min-h-screen">
-    <!-- Background Image -->
+    Background Image
     <div class="absolute inset-0">
       <img
-        src="@/assets/backgroundwebsite.png"
+        src="@/assets/background.png"
         alt="Hero Background"
         class="w-full h-full object-cover"
       />
@@ -45,6 +45,18 @@
         Maintain harvest & reduce harvest failure risk with us.
       </div>
     </div>
+
+    <!-- Logo Pojok Kiri dan Kanan -->
+    <img
+      src="@/assets/bungagede.png"
+      alt="Logo"
+      class="logo-left"
+    />
+    <img
+      src="@/assets/bungagede.png"
+      alt="Logo"
+      class="logo-right"
+    />
   </section>
 </template>
 
@@ -64,6 +76,38 @@ export default {
 </script>
 
 <style scoped>
+/* Rotasi Logo */
+@keyframes rotate-logo {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Penempatan dan animasi logo kiri */
+.logo-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform-origin: center;
+  animation: rotate-logo 10s linear infinite;
+  width: 150px; /* Atur ukuran logo */
+  margin-left: 20px;
+}
+
+/* Penempatan dan animasi logo kanan */
+.logo-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform-origin: center;
+  animation: rotate-logo 10s linear infinite;
+  width: 150px; /* Atur ukuran logo */
+  margin-right: 20px;
+}
+
 h1 {
   line-height: 1.3;
 }
