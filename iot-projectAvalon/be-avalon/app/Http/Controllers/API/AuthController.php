@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Mail\ForgotPasswordMainSend;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Otp_codes;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\RegisterMailSend;
 use Illuminate\Support\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
+use App\Mail\ForgotPasswordMainSend;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -134,6 +135,17 @@ class AuthController extends Controller
         $data = User::where('email', $request->email)
             ->with(['role'])
             ->first();
+
+        try {
+            $nodeResponse = Http::post('http://localhost:3000/api/store-token', [
+                'token' => $token,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Login berhasil, namun gagal mengirim token ke Node.js.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
 
         return response([
             "message" => "Login berhasil!",

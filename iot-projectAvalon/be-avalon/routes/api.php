@@ -4,7 +4,9 @@ use App\Http\Middleware\isAdmin;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\API\DeviceController;
 use App\Http\Middleware\VerifyPasswordResetToken;
+use App\Http\Controllers\API\HistoricalDataController;
 
 Route::prefix('v1')->group(function () {
 
@@ -34,5 +36,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/role/{id}', [RoleController::class, 'show']);
         Route::put('/role/{id}', [RoleController::class, 'update']);
         Route::delete('/role/{id}', [RoleController::class, 'destroy']);
+    });
+
+    // Device
+    Route::middleware(['auth:api'])->group(function () {
+        Route::post('/device', [DeviceController::class, 'storeOrUpdate']);
+    });
+
+    // Historical Data
+    Route::middleware(['auth:api'])->group(function () {
+        Route::post('/historical-data', [HistoricalDataController::class, 'store']);
+        Route::get('/historical-data/{id}', [HistoricalDataController::class, 'show']);
+        Route::delete('/historical-data/{id}', [HistoricalDataController::class, 'destroy']);
     });
 });

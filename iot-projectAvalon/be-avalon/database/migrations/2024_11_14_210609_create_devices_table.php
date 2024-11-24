@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('devices', function (Blueprint $table) {
             $table->uuid('devices_id')->primary();
-            $table->string('device_name');
+            $table->string('device_name')->nullable();
             $table->string('device_type');
             $table->string('status');
-            $table->string('location');
-            $table->string('description');
-            $table->uuid('users_id');
+            $table->string('location')->nullable();
+            $table->string('description')->nullable();
+            $table->uuid('users_id')->nullable();
             $table->foreign('users_id')->references('users_id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
