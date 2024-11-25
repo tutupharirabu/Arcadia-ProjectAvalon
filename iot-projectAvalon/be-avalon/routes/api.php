@@ -18,7 +18,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
         // Generate OTP Code - Verification Email
-        Route::post('/generate-otp-code', [AuthController::class, 'generateOtpCodeData']);
+        Route::post('/generate-otp-code', [AuthController::class, 'generateOtpCode']);
         Route::post('/verification-email', [AuthController::class, 'verificationEmail'])->middleware('auth:api');
 
         // Forgot Password
@@ -39,14 +39,26 @@ Route::prefix('v1')->group(function () {
     });
 
     // Device
-    Route::middleware(['auth:api'])->group(function () {
-        Route::post('/device', [DeviceController::class, 'storeOrUpdate']);
+    Route::prefix('device')->group(function () {
+
+        Route::post('/', [DeviceController::class, 'store']);
+        Route::get('/check/{devices_id}', [DeviceController::class, 'checkDeviceExist']);
+
+        // Menampilkan perangkat dan menghubungkan dengan pengguna jika belum ada
+        Route::middleware('auth:api')->group(function () {
+            Route::put('/{devices_id}', [DeviceController::class, 'update']);
+            Route::delete('/{devices_id}', [DeviceController::class, 'destroy']);
+
+            Route::get('/{devices_id}', [DeviceController::class, 'showDevice']);
+            Route::delete('/unlink/{devices_id}', [DeviceController::class, 'removeShowDevice']);
+
+        });
     });
 
     // Historical Data
-    Route::middleware(['auth:api'])->group(function () {
-        Route::post('/historical-data', [HistoricalDataController::class, 'store']);
-        Route::get('/historical-data/{id}', [HistoricalDataController::class, 'show']);
-        Route::delete('/historical-data/{id}', [HistoricalDataController::class, 'destroy']);
+    Route::prefix('historical-data')->middleware('auth:api')->group(function () {
+        Route::post('/', [HistoricalDataController::class, 'store']);
+        Route::get('/{id}', [HistoricalDataController::class, 'show']);
+        Route::delete('/{id}', [HistoricalDataController::class, 'destroy']);
     });
 });

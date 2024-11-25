@@ -37,6 +37,7 @@ class Device extends Model
      * @var array
      */
     protected $fillable = [
+        'devices_id',
         'device_name',
         'device_type',
         'status',

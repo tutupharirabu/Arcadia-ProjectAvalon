@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
                 'name' => 'Super-Admin',
                 'email' => 'super-admin@gmail.com',
                 'password' => Hash::make('password123'),
-                'roles_id' => '9d850118-64b8-4bf0-8898-73172f0d431a',
+                'roles_id' => '9d850101-2ca3-43a1-b14e-51fd09390c42',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],

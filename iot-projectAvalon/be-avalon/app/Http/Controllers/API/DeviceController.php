@@ -10,15 +10,28 @@ use App\Http\Controllers\Controller;
 class DeviceController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Periksa apakah perangkat dengan devices_id tertentu ada.
      */
-    public function index()
+    public function checkDeviceExist($devices_id)
     {
-        $devices = Device::with('user')->get();
+        // Cari perangkat berdasarkan devices_id
+        $device = Device::where('devices_id', $devices_id)->first();
+
+        if (!$device) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat tidak ditemukan.',
+            ], 404);
+        }
 
         return response()->json([
-            'pesan' => 'Data perangkat berhasil diambil.',
-            'perangkat' => $devices,
+            'status' => 'success',
+            'message' => 'Perangkat ditemukan.',
+            'data' => [
+                'devices_id' => $device->devices_id,
+                'device_type' => $device->device_type,
+                'status' => $device->status,
+            ],
         ], 200);
     }
 
@@ -31,13 +44,13 @@ class DeviceController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Simpan perangkat baru ke database tanpa membutuhkan autentikasi.
      */
     public function store(Request $request)
     {
         // Validasi input
         $request->validate([
-            'devices_id' => 'required|uuid|unique:devices,devices_id', // Pastikan devices_id adalah UUID unik
+            'devices_id' => 'required|uuid', // Pastikan devices_id adalah UUID unik
             'device_type' => 'required|string|max:255',
         ]);
 
@@ -45,6 +58,7 @@ class DeviceController extends Controller
         $device = Device::create([
             'devices_id' => $request->devices_id,
             'device_type' => $request->device_type,
+            'status' => 'Not Linked To User',
         ]);
 
         return response()->json([
@@ -54,12 +68,12 @@ class DeviceController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Tampilkan perangkat berdasarkan devices_id dan hubungkan jika belum ada users_id.
      */
-    public function showDevice(Request $request, $devices_id)
+    public function showDevice($devices_id)
     {
         // Cari perangkat berdasarkan devices_id
-        $device = Device::find($devices_id);
+        $device = Device::where('devices_id', $devices_id)->first();
 
         if (!$device) {
             return response()->json([
@@ -68,12 +82,13 @@ class DeviceController extends Controller
             ], 404);
         }
 
-        // Ambil users_id dari user yang sedang terautentikasi
-        $userId = $request->user()->users_id; // Pastikan user() berasal dari autentikasi
+        // Ambil userId dari pengguna yang sedang login
+        $userId = auth('api')->user()->users_id; // Pastikan `auth()` mengambil data pengguna yang terautentikasi
 
-        // Tambahkan users_id ke perangkat jika belum diisi
+        // Jika perangkat belum memiliki user_id, hubungkan dengan user_id pengguna yang sedang login
         if (!$device->users_id) {
             $device->users_id = $userId;
+            $device->status = "Active";
             $device->save();
         }
 
@@ -95,14 +110,25 @@ class DeviceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $devices_id)
     {
-        $device = Device::find($id);
+        // Cari perangkat berdasarkan devices_id
+        $device = Device::where('devices_id', $devices_id)->first();
 
         if (!$device) {
-            return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
+            return response()->json([
+                'pesan' => 'Perangkat tidak ditemukan.',
+            ], 404);
         }
 
+        // Periksa apakah perangkat memiliki users_id
+        if (!$device->users_id) {
+            return response()->json([
+                'pesan' => 'Perangkat belum terhubung dengan pengguna. Tidak dapat memperbarui data.',
+            ], 403); // Forbidden
+        }
+
+        // Validasi data yang akan diupdate
         $validated = $request->validate([
             'device_name' => 'sometimes|string|max:255',
             'status' => 'sometimes|string|in:Active,Inactive',
@@ -110,6 +136,7 @@ class DeviceController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        // Update data perangkat
         $device->update($validated);
 
         return response()->json([
@@ -121,9 +148,9 @@ class DeviceController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy($devices_id)
     {
-        $device = Device::find($id);
+        $device = Device::find($devices_id);
 
         if (!$device) {
             return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
@@ -136,7 +163,10 @@ class DeviceController extends Controller
         ], 200);
     }
 
-    public function removeShowDevice(Request $request, $devices_id)
+    /**
+     * Hapus relasi perangkat dengan pengguna.
+     */
+    public function removeShowDevice($devices_id)
     {
         // Cari perangkat berdasarkan devices_id
         $device = Device::find($devices_id);
@@ -149,7 +179,7 @@ class DeviceController extends Controller
         }
 
         // Pastikan pengguna yang meminta adalah pemilik perangkat
-        $userId = $request->user()->users_id;
+        $userId = auth('api')->user()->users_id;
         if ($device->users_id !== $userId) {
             return response()->json([
                 'status' => 'error',
@@ -159,6 +189,7 @@ class DeviceController extends Controller
 
         // Kosongkan users_id dari perangkat
         $device->users_id = null;
+        $device->status = 'Not Linked To User';
         $device->save();
 
         return response()->json([

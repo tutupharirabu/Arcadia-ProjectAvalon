@@ -17,7 +17,6 @@ return new class extends Migration
             $table->timestamp('waktu_diambil');
             $table->uuid('devices_id');
             $table->foreign('devices_id')->references('devices_id')->on('devices')->onDelete('cascade');
-            $table->timestamps();
         });
     }
 

@@ -108,7 +108,7 @@ class AuthController extends Controller
     public function getUser()
     {
         $currentUser = auth()->user();
-        $dataUser = User::with('profile')->find($currentUser->users_id);
+        $dataUser = User::with('role')->find($currentUser->users_id);
 
         return response()->json([
             'message' => 'Berhasil menampilkan data user!',
