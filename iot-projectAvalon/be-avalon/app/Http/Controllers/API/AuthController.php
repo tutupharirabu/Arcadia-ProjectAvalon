@@ -118,28 +118,41 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // Validasi input
         $request->validate([
             'email' => 'required|email|max:255',
             'password' => 'required',
         ]);
 
+        // Ambil kredensial
         $credentials = $request->only('email', 'password');
 
+        // Coba login dengan kredensial
         if (!$token = Auth::guard('api')->attempt($credentials)) {
             return response()->json([
                 'error' => 'Unauthorized',
-                'message' => 'Email atau password salah.'
+                'message' => 'Email atau password salah.',
             ], 401);
         }
 
-        $data = User::where('email', $request->email)
+        // Ambil data pengguna
+        $user = User::where('email', $request->email)
             ->with(['role'])
             ->first();
 
+        // Kirim token ke Node.js
         try {
-            $nodeResponse = Http::post('http://localhost:3000/api/store-token', [
+            $nodeResponse = Http::post(env('NODE_API_URL') . '/api/store-token', [
                 'token' => $token,
+                'users_id' => $user->users_id, // Tambahkan users_id
             ]);
+
+            if ($nodeResponse->failed()) {
+                return response()->json([
+                    'message' => 'Login berhasil, namun gagal mengirim token ke Node.js.',
+                    'error' => $nodeResponse->body(),
+                ], 500);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Login berhasil, namun gagal mengirim token ke Node.js.',
@@ -147,13 +160,14 @@ class AuthController extends Controller
             ], 500);
         }
 
-        return response([
+        // Berikan respons login berhasil
+        return response()->json([
             "message" => "Login berhasil!",
             "user" => [
-                "id" => $data->users_id,
-                "name" => $data->name,
-                "email" => $data->email,
-                "role" => $data->roles_id ? Str::ucfirst($data->role->title) : 'No Role Assigned',
+                "id" => $user->users_id,
+                "name" => $user->name,
+                "email" => $user->email,
+                "role" => $user->roles_id ? Str::ucfirst($user->role->title) : 'No Role Assigned',
             ],
             "token" => $token,
         ], 200);

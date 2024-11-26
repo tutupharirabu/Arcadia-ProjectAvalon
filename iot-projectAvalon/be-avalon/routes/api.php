@@ -42,10 +42,12 @@ Route::prefix('v1')->group(function () {
     Route::prefix('device')->group(function () {
 
         Route::post('/', [DeviceController::class, 'store']);
-        Route::get('/check/{devices_id}', [DeviceController::class, 'checkDeviceExist']);
+        Route::get('/check-public/{devices_id}', [DeviceController::class, 'checkDeviceExistPublic']);
 
         // Menampilkan perangkat dan menghubungkan dengan pengguna jika belum ada
         Route::middleware('auth:api')->group(function () {
+            Route::get('/check-private/{devices_id}', [DeviceController::class, 'checkDeviceExistPrivate']);
+
             Route::put('/{devices_id}', [DeviceController::class, 'update']);
             Route::delete('/{devices_id}', [DeviceController::class, 'destroy']);
 

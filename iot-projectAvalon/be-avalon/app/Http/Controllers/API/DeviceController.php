@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Device;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -12,7 +11,7 @@ class DeviceController extends Controller
     /**
      * Periksa apakah perangkat dengan devices_id tertentu ada.
      */
-    public function checkDeviceExist($devices_id)
+    public function checkDeviceExistPublic($devices_id)
     {
         // Cari perangkat berdasarkan devices_id
         $device = Device::where('devices_id', $devices_id)->first();
@@ -31,6 +30,33 @@ class DeviceController extends Controller
                 'devices_id' => $device->devices_id,
                 'device_type' => $device->device_type,
                 'status' => $device->status,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Periksa apakah perangkat dengan devices_id tertentu ada.
+     */
+    public function checkDeviceExistPrivate($devices_id)
+    {
+        // Cari perangkat berdasarkan devices_id
+        $device = Device::where('devices_id', $devices_id)->first();
+
+        if (!$device) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Perangkat ditemukan.',
+            'data' => [
+                'devices_id' => $device->devices_id,
+                'device_type' => $device->device_type,
+                'status' => $device->status,
+                'users_id' => $device->users_id,
             ],
         ], 200);
     }
