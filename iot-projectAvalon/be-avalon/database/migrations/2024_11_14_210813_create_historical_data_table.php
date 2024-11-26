@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('historical_data', function (Blueprint $table) {
             $table->uuid('history_id')->primary();
             $table->json('parameters');
-            $table->timestamp('waktu_diambil');
             $table->uuid('devices_id');
             $table->foreign('devices_id')->references('devices_id')->on('devices')->onDelete('cascade');
+            $table->timestamps();
         });
     }
 

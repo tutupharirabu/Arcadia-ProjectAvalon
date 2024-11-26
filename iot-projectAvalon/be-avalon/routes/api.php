@@ -44,7 +44,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/', [DeviceController::class, 'store']);
         Route::get('/check-public/{devices_id}', [DeviceController::class, 'checkDeviceExistPublic']);
 
-        // Menampilkan perangkat dan menghubungkan dengan pengguna jika belum ada
         Route::middleware('auth:api')->group(function () {
             Route::get('/check-private/{devices_id}', [DeviceController::class, 'checkDeviceExistPrivate']);
 
@@ -58,9 +57,10 @@ Route::prefix('v1')->group(function () {
     });
 
     // Historical Data
-    Route::prefix('historical-data')->middleware('auth:api')->group(function () {
+    Route::prefix('historical-data')->group(function () {
         Route::post('/', [HistoricalDataController::class, 'store']);
-        Route::get('/{id}', [HistoricalDataController::class, 'show']);
-        Route::delete('/{id}', [HistoricalDataController::class, 'destroy']);
+        Route::middleware('auth:api')->group(function () {
+            Route::get('/{id}', [HistoricalDataController::class, 'show']);
+        });
     });
 });

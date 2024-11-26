@@ -23,9 +23,13 @@ class HistoricalData extends Model
      * @var array
      */
     protected $fillable = [
+        'history_id',
         'parameters',
-        'waktu_diambil',
         'devices_id',
+    ];
+
+    protected $casts = [
+        'parameters' => 'array', // Konversi otomatis JSON ke array
     ];
 
     /**
