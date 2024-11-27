@@ -58,8 +58,43 @@ class HistoricalDataController extends Controller
     /**
      * Menampilkan data historis berdasarkan ID.
      */
-    public function show($id)
+    public function show($devices_id)
     {
+        try {
+            // Ambil perangkat berdasarkan devices_id
+            $device = Device::where('devices_id', $devices_id)->first();
 
+            // Periksa apakah perangkat ditemukan
+            if (!$device) {
+                return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
+            }
+
+            // Periksa apakah perangkat terhubung dengan pengguna
+            if (!$device->users_id) {
+                return response()->json(['pesan' => 'Perangkat belum terhubung dengan pengguna.'], 403);
+            }
+
+            // Ambil data historis berdasarkan devices_id
+            $historicalData = HistoricalData::where('devices_id', $devices_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Periksa apakah ada data historis
+            if ($historicalData->isEmpty()) {
+                return response()->json(['pesan' => 'Tidak ada data historis untuk perangkat ini.'], 404);
+            }
+
+            // Respon data historis
+            return response()->json([
+                'pesan' => 'Data historis berhasil diambil.',
+                'data' => $historicalData,
+            ], 200);
+        } catch (\Exception $e) {
+            // Respon kesalahan
+            return response()->json([
+                'pesan' => 'Gagal mengambil data historis.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
