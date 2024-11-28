@@ -1,4 +1,6 @@
-Untuk menjalankan node server dan laravel secara local, lakukan beberapa langkah berikut:
+## About This Project
 
-Laravel -> ke direktori be-avalon lalu php artisan serve \n
-Node Server.js -> ke direktori be-avelon/node-mqtt-server lalu node server.js
+Untuk dapat menjalankan project ini secara lokal, ikuti langkah dibawah ini:
+
+- Menjalankan Server Laravel : Ke direktori be-avalon, lalu php artisan server
+- Menjalankan Node Server : Ke direktori be-avelon/node_mqtt_server, lalu node server.js
