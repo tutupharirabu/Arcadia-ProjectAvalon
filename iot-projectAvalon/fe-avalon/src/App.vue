@@ -1,30 +1,28 @@
 <template>
   <div>
-    <HeroSection />
-    <AboutSection />
-    <FeaturesSection />
-    <TeamSection />
-    <Footer />
-    <ContactSection />
+    <!-- Navbar hanya ditampilkan jika hideNavbar tidak ada di meta rute -->
+    <Navbar v-if="!$route.meta.hideNavbar" />
+
+    <!-- Tempatkan router-view untuk menampilkan halaman sesuai rute -->
+    <router-view />
   </div>
 </template>
 
 <script>
-import HeroSection from '@/components/HeroSection.vue';
-import AboutSection from '@/components/AboutSection.vue';
-import FeaturesSection from '@/components/FeaturesSection.vue';
-import TeamSection from '@/components/TeamSection.vue';
-import ContactSection from '@/components/ContactSection.vue';
-import Footer from '@/components/Footer.vue';
+import Navbar from "@/components/Navbar.vue"; // import komponen navbar
 
 export default {
   components: {
-    HeroSection,
-    AboutSection,
-    // FeaturesSection,
-    TeamSection,
-    Footer
-    // ContactSection,
+    Navbar,
   },
 };
 </script>
+
+
+<style>
+/* Tambahkan styling global jika diperlukan */
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+}
+</style>

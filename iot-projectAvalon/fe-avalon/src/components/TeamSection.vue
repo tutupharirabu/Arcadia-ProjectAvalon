@@ -44,13 +44,15 @@
   import AOS from 'aos';
   import 'aos/dist/aos.css';
   import deazardImage from '@/assets/Deazard Muhammad Arrayyan_FotoNoBG.png';
+  import salsa from '@/assets/salsa.png';
+  import irfan from '@/assets/irfan.png';
   
   export default {
     data() {
       return {
         team: [
-          { name: 'Salsa Arifah Zakkiyah', role: 'CEO', image: 'https://via.placeholder.com/200x200' },
-          { name: 'Irfan Zharauri Nanda Sudiyanto', role: 'CTO', image: 'https://via.placeholder.com/200x200' },
+          { name: 'Salsa Arifah Zakkiyah', role: 'CEO', image: salsa },
+          { name: 'Irfan Zharauri Nanda Sudiyanto', role: 'CTO', image: irfan },
           { name: 'Abdurahman Dzakky', role: 'CDO', image: 'https://via.placeholder.com/200x200' },
           { name: 'Hafiz Yazid Muhammad', role: 'CIOT', image: 'https://via.placeholder.com/200x200' },
           { name: 'Masna Abdul Baqi', role: 'Bussiness Analyst', image: 'https://via.placeholder.com/200x200' },
