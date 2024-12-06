@@ -212,9 +212,8 @@ export default {
     };
   },
   mounted() {
-    // Inisialisasi AOS
     AOS.init({
-      once: true, // Animasi berjalan sekali saat scroll
+      once: true,
     });
   },
   methods: {
@@ -244,13 +243,12 @@ hr:hover {
   width: 30%;
 }
 
-/* Gaya latar belakang untuk section */
-.bg-product-section {
-  /* background-image: url("@/assets/product.png"); 
+/* .bg-product-section {
+  background-image: url("@/assets/product.png"); 
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; */
-}
+  background-attachment: fixed;
+} */
 
 /* Gaya untuk Judul */
 .about-title {

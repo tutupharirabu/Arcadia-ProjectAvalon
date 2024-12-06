@@ -142,11 +142,11 @@ h1 {
   }
 
   .pt-50 {
-    padding-top: 50px; /* Adjust for mobile */
+    padding-top: 50px; 
   }
 
   .pt-60 {
-    padding-top: 60px; /* Adjust for mobile */
+    padding-top: 60px; 
   }
 }
 /* Tombol "Daftar Sekarang" */
@@ -173,7 +173,7 @@ h1 {
   transform: scale(0.95);
 }
 
-/* Responsif - Penyesuaian untuk perangkat kecil */
+/* Responsif - Penyesuaian untuk mobile */
 @media (max-width: 640px) {
   .btn-register-now {
     font-size: 1rem;

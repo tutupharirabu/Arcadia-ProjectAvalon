@@ -80,7 +80,7 @@
         </div>
       </section>
 
-      <!-- Weather Forecast Section -->
+      <!-- Weather Section -->
       <section class="p-6 bg-white shadow-lg rounded-lg hover:shadow-xl transition transform hover:scale-105 border-t-4 border-pink-500 mb-10">
         <h3 class="text-xl font-semibold text-pink-700 flex items-center mb-4">
           <span class="ml-2">Prediksi dan Pemantauan Cuaca</span>
