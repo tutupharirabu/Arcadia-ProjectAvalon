@@ -1,0 +1,35 @@
+[33m57b9dc4e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m membenarkan error
+[33m97988cd7[m revisi landpage & dashboard
+[33m6f1fb6a3[m Dashboard
+[33m8a0b98cc[m upload kedua
+[33m11331ae5[m test2
+[33m2e67a193[m[33m ([m[1;31morigin/main[m[33m)[m update .editorconfig
+[33m0cfe2b6e[m Revert "Update server + api"
+[33m097765ab[m update laravel 11
+[33md5747537[m Update fe avalon
+[33mb6c8642b[m Update folder be dan fe
+[33mcd8f788a[m Update server + api
+[33m307f88af[m Update API
+[33mf5dd8e6d[m Update api.php
+[33m879d2746[m Perbaikan post data ke redis
+[33m62c56ba4[m Perbaikan api.php (lagi)
+[33m31f49891[m Perbaiki web route
+[33mf47a7e5b[m Update api dan view (lagi)
+[33mced6f1a2[m Perbaiki api dan view
+[33m4ca7a8e1[m Ulang https
+[33m02983828[m Perbaiki https
+[33m2fb343a2[m Perbaiki server running
+[33maf94c340[m Perbaiki view
+[33m6f515b6e[m Update config api & http
+[33m35f9d017[m Update log fail
+[33mcd9d9e9f[m Update config redis
+[33ma5f86e26[m Update redis/predis composer
+[33m49ccdf66[m Update config server.js
+[33m83ef1f3a[m Update server.js
+[33md428c3e3[m Update npm redis
+[33m8975498d[m Update config
+[33m3fd54017[m Update MVC
+[33mc742e56a[m Update Pengaturan Deploy Railway
+[33mc37bb519[m Update Parameter Node Server & View Laravel
+[33mbd646e3f[m Initial Setup for Node Server & Laravel Backend
+[33m38744404[m Initial commit

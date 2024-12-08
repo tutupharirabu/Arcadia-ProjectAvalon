@@ -2,5 +2,8 @@
   "dependencies": {
     "chart.js": "^4.4.7",
     "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "vite": "^6.0.3"
   }
 }
