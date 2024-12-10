@@ -31,11 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('user', JSON.stringify(user));
 
             // Redirect berdasarkan role
-            if (user.role === 'admin' || user.role === 'super-admin') {
-                router.push('/dashboardAdmin');
-            } else if (user.role === 'user') {
-                router.push('/home');
-            }
+            if (user.role === 'Petani') {
+                router.push('/home-dashboard-petani');
+            } 
         } catch (error) {
             isError.value = true;
             const errors = error.response?.data || { message: 'An error occurred' };
@@ -68,6 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
             tokenUser.value = token
             currentUser.value = user
 
+            localStorage.setItem('userEmail', email);
             localStorage.setItem('token', JSON.stringify(token))
             localStorage.setItem('user', JSON.stringify(user))
 

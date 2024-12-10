@@ -228,6 +228,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Verifikasi OTP berhasil~',
+            'reset_token' => $resetToken,
         ], 200);
     }
 
