@@ -61,12 +61,11 @@ export const useAuthStore = defineStore('auth', () => {
                 password_confirmation,
             })
 
-            const { token, data: user } = data
+            const { token, user } = data
 
             tokenUser.value = token
             currentUser.value = user
 
-            localStorage.setItem('userEmail', email);
             localStorage.setItem('token', JSON.stringify(token))
             localStorage.setItem('user', JSON.stringify(user))
 

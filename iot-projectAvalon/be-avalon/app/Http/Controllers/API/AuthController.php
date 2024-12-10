@@ -49,6 +49,10 @@ class AuthController extends Controller
 
         return response([
             'message' => "Register berhasil! Silahkan cek email untuk verifikasi.",
+            "user" => [
+                "name" => $request->name,
+                "email" => $request->email,
+            ],
             'token' => $token,
         ], 201);
     }

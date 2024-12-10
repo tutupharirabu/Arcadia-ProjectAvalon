@@ -72,7 +72,7 @@ const resendOtp = async () => {
 
     try {
         // Ambil email dari localStorage
-        const email = localStorage.getItem('userEmail');
+        const email = AuthStore.currentUser.email;
         if (!email) {
             return alert('Email tidak ditemukan. Silakan masukkan email terlebih dahulu.');
         }
