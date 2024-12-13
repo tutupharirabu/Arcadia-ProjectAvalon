@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/check-public/{devices_id}', [DeviceController::class, 'checkDeviceExistPublic']);
 
         Route::middleware('auth:api')->group(function () {
+            Route::get('/check-by-user/{userId?}', [DeviceController::class, 'getDevicesByUser']);
             Route::get('/check-private/{devices_id}', [DeviceController::class, 'checkDeviceExistPrivate']);
 
             Route::put('/{devices_id}', [DeviceController::class, 'update']);

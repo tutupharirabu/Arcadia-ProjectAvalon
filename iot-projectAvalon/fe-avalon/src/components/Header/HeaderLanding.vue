@@ -20,7 +20,7 @@
         </div>
         <div class="navbar-end mr-4">
             <button v-if="currentUser" @click="handleLogout" class="btn btn-error">Logout</button>
-            <router-link v-else to="/login" class="btn bg-primary-content text-primary">Login</router-link>
+            <router-link v-else to="/monitoring-arcadia/login" class="btn bg-primary-content text-primary">Login</router-link>
         </div>
     </div>
 </template>

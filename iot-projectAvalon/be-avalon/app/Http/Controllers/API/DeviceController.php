@@ -8,6 +8,33 @@ use App\Http\Controllers\Controller;
 
 class DeviceController extends Controller
 {
+
+    /**
+     * Cek perangkat yang terhubung dengan pengguna tertentu.
+     */
+    public function getDevicesByUser($userId = null)
+    {
+        // Ambil userId dari pengguna yang sedang login jika $userId tidak diberikan
+        if (!$userId) {
+            $userId = auth('api')->user()->users_id;
+        }
+
+        // Cari perangkat yang terhubung dengan users_id
+        $devices = Device::where('users_id', $userId)->get();
+
+        if ($devices->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada perangkat yang terhubung dengan pengguna ini.',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Perangkat yang terhubung ditemukan.',
+            'data' => $devices,
+        ], 200);
+    }
+
     /**
      * Periksa apakah perangkat dengan devices_id tertentu ada.
      */

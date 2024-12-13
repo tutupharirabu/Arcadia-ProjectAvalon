@@ -1,5 +1,5 @@
 <template>
-    <div class="flex h-screen">
+    <div class="flex h-screen bg-base-100">
       <!-- Drawer -->
       <Drawer />
   

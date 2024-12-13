@@ -32,8 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
 
             // Redirect berdasarkan role
             if (user.role === 'Petani') {
-                router.push('/home-dashboard-petani');
-            } 
+                router.push('/monitoring-arcadia/dashboard');
+            }
         } catch (error) {
             isError.value = true;
             const errors = error.response?.data || { message: 'An error occurred' };
@@ -100,7 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.removeItem('token')
             localStorage.removeItem('user')
 
-            router.push('/login')
+            router.push('/monitoring-arcadia/login')
 
         } catch (error) {
             console.error(error)

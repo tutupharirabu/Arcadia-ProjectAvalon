@@ -9,6 +9,9 @@ export default {
       fontFamily: {
         sans: ['Montserrat Alternates', 'sans-serif'],
       },
+      maxHeight: {
+        '128': '32rem',
+      }
     },
   },
   plugins: [

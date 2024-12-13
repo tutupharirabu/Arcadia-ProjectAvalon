@@ -26,7 +26,7 @@
             <h1 class="text-3xl font-bold mb-6">{{ props.isRegister ? 'Create an account' : 'Log in' }}</h1>
             <p class="mb-4">
                 {{ props.isRegister ? 'Already have an account?' : "Don't have an account?" }}
-                <router-link :to="props.isRegister ? '/login' : '/register'" class="text-primary underline">
+                <router-link :to="props.isRegister ? '/monitoring-arcadia/login' : '/monitoring-arcadia/register'" class="text-primary underline">
                     {{ props.isRegister ? 'Log in' : 'Register' }}
                 </router-link>
             </p>
