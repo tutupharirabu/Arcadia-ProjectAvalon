@@ -81,8 +81,11 @@ class DeviceController extends Controller
             'message' => 'Perangkat ditemukan.',
             'data' => [
                 'devices_id' => $device->devices_id,
+                'devices_name' => $device->devices_name,
                 'device_type' => $device->device_type,
                 'status' => $device->status,
+                'location' => $device->location,
+                'description' => $device->description,
                 'users_id' => $device->users_id,
             ],
         ], 200);

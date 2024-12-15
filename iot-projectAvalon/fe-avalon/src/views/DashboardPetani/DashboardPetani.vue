@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-wrap items-center justify-center space-x-4 p-4 mt-12" style="max-width: 1920px;">
         <!-- Add Device Section -->
-        <div class=" mt-8 p-8 border border-neutral rounded-lg">
+        <div class=" mt-8 p-4 border border-neutral rounded-lg">
             <p>POKOKNYA DISINI ADA WEATHER APP</p>
         </div>
 
@@ -12,15 +12,24 @@
 
         <!-- Charts Section -->
         <div v-if="tempHumData && HumidityData && soilMoistureData"
-            class="w-full mt-8 border border-neutral rounded-lg shadow-md p-4">
-            <h3>Temperature</h3>
-            <Line :data="JSON.parse(JSON.stringify(tempHumData))" :options="chartOptions" />
+            class="w-full mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Temperature Chart -->
+            <div class="p-4 border border-neutral rounded-lg">
+                <h3 class="text-center font-bold text-lg mb-4">Temperature</h3>
+                <Line :data="JSON.parse(JSON.stringify(tempHumData))" :options="chartOptions" />
+            </div>
 
-            <h3 class="mt-8">Humidity</h3>
-            <Line :data="JSON.parse(JSON.stringify(HumidityData))" :options="chartOptions" />
+            <!-- Humidity Chart -->
+            <div class="p-4 border border-neutral rounded-lg">
+                <h3 class="text-center font-bold text-lg mb-4">Humidity</h3>
+                <Line :data="JSON.parse(JSON.stringify(HumidityData))" :options="chartOptions" />
+            </div>
 
-            <h3 class="mt-8">Soil Moisture</h3>
-            <Line :data="JSON.parse(JSON.stringify(soilMoistureData))" :options="chartOptions" />
+            <!-- Soil Moisture Chart -->
+            <div class="p-4 border border-neutral rounded-lg">
+                <h3 class="text-center font-bold text-lg mb-4">Soil Moisture</h3>
+                <Line :data="JSON.parse(JSON.stringify(soilMoistureData))" :options="chartOptions" />
+            </div>
         </div>
         <div v-else class="w-full mt-8 text-center border border-neutral rounded-lg shadow-md p-4">
             <p>Loading charts...</p>
@@ -130,7 +139,7 @@ const chartOptions = {
 
 // Fungsi untuk menambahkan data baru ke grafik
 const appendToCharts = (deviceData) => {
-    const timestamp = deviceData.temperature?.timestamp || "Unknown";
+    const timestamp = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' });
 
     // Hindari duplikasi data di setiap grafik
     if (!tempHumData.value.labels.includes(timestamp)) {

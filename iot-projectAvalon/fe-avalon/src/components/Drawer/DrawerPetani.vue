@@ -36,9 +36,9 @@ import DrawerList from "@/components/Drawer/DrawerListPetani.vue";
 
 // OhVueIcons imports
 import { addIcons } from "oh-vue-icons";
-import { FaHome, BiList, RiLogoutBoxLine } from "oh-vue-icons/icons";
+import { FaHome, BiList, RiLogoutBoxLine, MdDevicehubOutlined } from "oh-vue-icons/icons";
 
-addIcons(FaHome, BiList, RiLogoutBoxLine);
+addIcons(FaHome, BiList, RiLogoutBoxLine, MdDevicehubOutlined);
 
 // State untuk drawer terbuka/tertutup
 const isDrawerOpen = ref(true);
@@ -49,7 +49,8 @@ const toggleDrawer = () => {
 
 // Data menu navigasi
 const listURL = [
-    { name: "Dashboard", url: "/monitoring-arcadia/dashboard", icon: "fa-home" },
+    { name: "Beranda", url: "/monitoring-arcadia/dashboard", icon: "fa-home" },
+    { name: "Alat-Alat", url: "/monitoring-arcadia/device", icon: "md-devicehub-outlined" },
 
 ];
 

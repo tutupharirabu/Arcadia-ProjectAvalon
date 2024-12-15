@@ -14,7 +14,7 @@ const router = createRouter({
       children: [
         {
           path: 'beranda',
-          name: 'Home Landing Page',
+          name: 'HomeLandingPage',
           component: () => import('@/views/LandingPage/HomeView.vue'),
         },
       ],
@@ -28,8 +28,18 @@ const router = createRouter({
       children: [
         {
           path: 'dashboard',
-          name: 'Home Dashboard Petani',
+          name: 'HomeDashboardPetani',
           component: () => import('../views/DashboardPetani/DashboardPetani.vue'),
+        },
+        {
+          path: 'device',
+          name: 'CekDevicePetani',
+          component: () => import('../views/Device/DevicePetani.vue'),
+        },
+        {
+          path: 'device/:id',
+          name: 'DetailDevice',
+          component: () => import('../views/Device/DetailDevice/DetailDevicePetani.vue'),
         },
       ],
     },
@@ -59,32 +69,45 @@ const router = createRouter({
       path: '/forgot-password',
       name: 'forgotPassword',
       component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/ForgotPass.vue'),
-      children: [
-        {
-          path: 'verifikasiOTP',
-          name: 'OTP Forgot Password',
-          component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/VerifOTPForgotPass.vue'),
-        },
-        {
-          path: 'resetPassword',
-          name: 'Reset Password',
-          component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/SubmitPass.vue'),
-        },
-      ],
+    },
+    {
+      path: '/forgot-password/verifikasiOTP',
+      name: 'OTPForgotPassword',
+      component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/VerifOTPForgotPass.vue'),
+      meta: { requiresParent: true }, // Tambahkan meta
+    },
+    {
+      path: '/forgot-password/resetPassword',
+      name: 'ResetPassword',
+      component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/SubmitPass.vue'),
+      meta: { requiresParent: true }, // Tambahkan meta
     },
   ]
 })
 
-router.beforeEach((to, from) => {
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   if (to.meta.isAuth && !authStore.tokenUser) {
     alert('Kamu tidak punya akses ke halaman ini!')
-    return '//monitoring-arcadia/login'
+    return '/monitoring-arcadia/login'
   }
 
   if (to.meta.isPetani && !authStore.tokenUser && authStore?.currentUser?.role !== 'petani') {
     alert('Kamu tidak punya akses ke halaman dashboard petani ini!')
     return '/beranda'
+  }
+
+  if (to.meta.requiresParent) {
+    const accessedForgotPassword = localStorage.getItem('accessForgotPassword');
+
+    if (!accessedForgotPassword) {
+      // Redirect ke '/forgot-password' jika flag tidak ditemukan
+      next({ name: 'forgotPassword' });
+    } else {
+      next();
+    }
+  } else {
+    next();
   }
 })
 

@@ -33,7 +33,7 @@ export default {
           "neutral": "#8B8B8B", // Warna netral - Abu-abu gelap
           "neutral-content": "#FFFFFF", // Kontras dengan warna putih
 
-          "base-100": "#FFF9E2", // Warna dasar terang
+          "base-100": "#FFFFFF", // Warna dasar terang
           "base-200": "#FEC7B4", // Warna dasar menengah - Peach lembut
           "base-300": "#FC819E", // Warna dasar gelap - Pink lembut
 

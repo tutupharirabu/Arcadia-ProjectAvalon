@@ -77,8 +77,8 @@
     <div class="email-container">
         <!-- Header -->
         <div class="header">
-            <img src="https://res.cloudinary.com/dasfdo5kq/image/upload/v1731941699/zw7p6gtgwzc722zozven.png"
-                alt="Arcadia">
+            <img src="https://res.cloudinary.com/dasfdo5kq/image/upload/v1734264909/gbqi3yjzrpolidyqug9v.png"
+                alt="Arcadia" style="max-width: 100%; height: auto; width: 50px;">
         </div>
 
         <!-- Content -->
@@ -87,8 +87,10 @@
             <p>You requested to reset your password.</p>
             <p>Use the following OTP code to proceed with your password reset:</p>
             <p class="confirmation-code">{{ $otp }}</p>
-            <p style="color: #888888; font-size: 14px;">This code is valid for 5 minutes. Please do not share it with anyone.</p>
-            <p>If you didn’t request a password reset, please ignore this email or contact our support team immediately.</p>
+            <p style="color: #888888; font-size: 14px;">This code is valid for 5 minutes. Please do not share it with
+                anyone.</p>
+            <p>If you didn’t request a password reset, please ignore this email or contact our support team immediately.
+            </p>
             <p>Thanks,<br>The Arcadia Flora Team</p>
         </div>
 

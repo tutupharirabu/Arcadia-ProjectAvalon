@@ -77,8 +77,8 @@
     <div class="email-container">
         <!-- Header -->
         <div class="header">
-            <img src="https://res.cloudinary.com/dasfdo5kq/image/upload/v1731941699/zw7p6gtgwzc722zozven.png"
-                alt="Arcadia">
+            <img src="https://res.cloudinary.com/dasfdo5kq/image/upload/v1734264909/gbqi3yjzrpolidyqug9v.png"
+                alt="Arcadia" style="max-width: 100%; height: auto; width: 50px;">
         </div>
 
         <!-- Content -->
