@@ -22,14 +22,18 @@ class DeviceController extends Controller
         // Cari perangkat yang terhubung dengan users_id
         $devices = Device::where('users_id', $userId)->get();
 
+        // Jika tidak ada perangkat, kembalikan data kosong dengan status 200
         if ($devices->isEmpty()) {
             return response()->json([
-                'status' => 'error',
+                'status' => 'no device',
                 'message' => 'Tidak ada perangkat yang terhubung dengan pengguna ini.',
-            ], 404);
+                'data' => [],
+            ], 200);
         }
 
+        // Jika perangkat ditemukan, kembalikan data perangkat
         return response()->json([
+            'status' => 'success',
             'message' => 'Perangkat yang terhubung ditemukan.',
             'data' => $devices,
         ], 200);
@@ -81,7 +85,7 @@ class DeviceController extends Controller
             'message' => 'Perangkat ditemukan.',
             'data' => [
                 'devices_id' => $device->devices_id,
-                'devices_name' => $device->devices_name,
+                'device_name' => $device->device_name,
                 'device_type' => $device->device_type,
                 'status' => $device->status,
                 'location' => $device->location,

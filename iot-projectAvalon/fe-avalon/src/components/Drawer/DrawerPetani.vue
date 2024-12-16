@@ -1,7 +1,7 @@
 <template>
     <div :class="[
         'bg-accent text-base-content border-r border-neutral transition-all duration-300',
-        isDrawerOpen ? 'w-64' : 'w-18'
+        isDrawerOpen ? 'w-48' : 'w-18'
     ]" class="flex flex-col h-screen">
         <!-- Drawer Header -->
         <div class="flex items-center justify-between p-3 text-primary">
@@ -21,16 +21,18 @@
 
         <!-- Logout Button -->
         <div class="p-2 mt-auto">
-            <button class="btn btn-primary w-full flex items-center justify-center gap-2" @click="handleLogout">
-                <v-icon name="ri-logout-box-line" class="h-5 w-5" />
-                <span v-if="isDrawerOpen">Logout</span>
+            <button class="btn btn-primary w-full flex items-center justify-center gap-2" @click="handleLogout"
+                :disabled="isLoading">
+                <v-icon v-if="!isLoading" name="ri-logout-box-line" class="h-5 w-5" />
+                <span v-if="!isLoading && isDrawerOpen">Logout</span>
+                <span v-else-if="isLoading" class="loading loading-spinner loading-sm text-primary"></span>
             </button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, defineEmits } from "vue";
 import { useAuthStore } from "@/stores/Auth";
 import DrawerList from "@/components/Drawer/DrawerListPetani.vue";
 
@@ -42,36 +44,36 @@ addIcons(FaHome, BiList, RiLogoutBoxLine, MdDevicehubOutlined);
 
 // State untuk drawer terbuka/tertutup
 const isDrawerOpen = ref(true);
+const emit = defineEmits(["toggle"]);
+
+const isLoading = ref(false); // State untuk loader
 
 const toggleDrawer = () => {
     isDrawerOpen.value = !isDrawerOpen.value;
+    emit("toggle", isDrawerOpen.value); // Kirim state ke parent
 };
 
 // Data menu navigasi
 const listURL = [
     { name: "Beranda", url: "/monitoring-arcadia/dashboard", icon: "fa-home" },
     { name: "Alat-Alat", url: "/monitoring-arcadia/device", icon: "md-devicehub-outlined" },
-
 ];
 
 const authStore = useAuthStore();
-const { currentUser, logoutUser } = authStore;
+const { logoutUser } = authStore;
 
-const filterNavItems = computed(() => {
-    return listURL.filter((item) => {
-        //    if (item.name === "Admin") {
-        //         return ["admin", "super-admin"].includes(currentUser?.role);
-        //     }
-        //     if (item.name === "Super-Admin") {
-        //         return currentUser?.role === "super-admin";
-        //     }
-        return true;
-    })
-})
+const filterNavItems = computed(() => listURL);
 
-const handleLogout = () => {
-    logoutUser();
-}
+const handleLogout = async () => {
+    isLoading.value = true; // Aktifkan loader
+    try {
+        await logoutUser(); // Proses logout
+    } catch (error) {
+        console.error("Error during logout:", error);
+    } finally {
+        isLoading.value = false; // Matikan loader
+    }
+};
 </script>
 
 <style scoped>
@@ -86,12 +88,6 @@ const handleLogout = () => {
 
 .menu li:hover {
     background-color: var(--base-300);
-}
-
-/* Logout Button Styling */
-button.btn-primary {
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
 }
 
 /* Adjust Positioning */

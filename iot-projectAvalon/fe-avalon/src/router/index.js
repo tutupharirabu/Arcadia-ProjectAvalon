@@ -41,6 +41,11 @@ const router = createRouter({
           name: 'DetailDevice',
           component: () => import('../views/Device/DetailDevice/DetailDevicePetani.vue'),
         },
+        {
+          path: "device/update/:id",
+          name: "updateDevice",
+          component: () => import('../views/Device/DetailDevice/UpdateDetailDevicePetani.vue'),
+        },
       ],
     },
 
@@ -74,41 +79,46 @@ const router = createRouter({
       path: '/forgot-password/verifikasiOTP',
       name: 'OTPForgotPassword',
       component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/VerifOTPForgotPass.vue'),
-      meta: { requiresParent: true }, // Tambahkan meta
+      meta: { forgotPass: true },
     },
     {
       path: '/forgot-password/resetPassword',
       name: 'ResetPassword',
       component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/SubmitPass.vue'),
-      meta: { requiresParent: true }, // Tambahkan meta
+      meta: { forgotPass: true },
     },
   ]
 })
 
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
+
+  // Cek halaman yang membutuhkan autentikasi
   if (to.meta.isAuth && !authStore.tokenUser) {
-    alert('Kamu tidak punya akses ke halaman ini!')
-    return '/monitoring-arcadia/login'
+    alert('Kamu tidak punya akses ke halaman ini!');
+    next('/monitoring-arcadia/login'); // Gunakan next() dengan path tujuan
+    return; // Pastikan keluar dari fungsi
   }
 
-  if (to.meta.isPetani && !authStore.tokenUser && authStore?.currentUser?.role !== 'petani') {
-    alert('Kamu tidak punya akses ke halaman dashboard petani ini!')
-    return '/beranda'
+  // Cek halaman dashboard petani
+  if (to.meta.isPetani && (!authStore.tokenUser || authStore?.currentUser?.role !== 'Petani')) {
+    alert('Kamu tidak punya akses ke halaman dashboard petani ini!');
+    next('/beranda');
+    return;
   }
 
-  if (to.meta.requiresParent) {
+  // Cek halaman forgot-password dengan flag di localStorage
+  if (to.meta.forgotPass) {
     const accessedForgotPassword = localStorage.getItem('accessForgotPassword');
 
     if (!accessedForgotPassword) {
       // Redirect ke '/forgot-password' jika flag tidak ditemukan
       next({ name: 'forgotPassword' });
-    } else {
-      next();
+      return;
     }
-  } else {
-    next();
   }
-})
+
+  next(); // Lanjutkan ke halaman tujuan jika semua kondisi lolos
+});
 
 export default router

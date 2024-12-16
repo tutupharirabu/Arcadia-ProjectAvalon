@@ -1,44 +1,44 @@
 <template>
-    <div class="flex flex-wrap items-center justify-center space-x-4 p-4 mt-12" style="max-width: 1920px;">
-        <!-- Add Device Section -->
-        <div class=" mt-8 p-4 border border-neutral rounded-lg">
-            <p>POKOKNYA DISINI ADA WEATHER APP</p>
-        </div>
+    <div class="flex flex-wrap items-center justify-center space-x-4 p-4" style="max-width: 1920px;">
 
-        <!-- Calendar Section -->
-        <div class="w-full mt-8 p-4 flex-grow max-h-128">
-            <ScheduleXCalendar :calendar-app="calendarApp" @event-click="onEventClick" />
-        </div>
+        <!-- Grid Container -->
+        <div class="grid grid-cols-4 gap-4 w-full">
 
-        <!-- Charts Section -->
-        <div v-if="tempHumData && HumidityData && soilMoistureData"
-            class="w-full mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Temperature Chart -->
-            <div class="p-4 border border-neutral rounded-lg">
-                <h3 class="text-center font-bold text-lg mb-4">Temperature</h3>
-                <Line :data="JSON.parse(JSON.stringify(tempHumData))" :options="chartOptions" />
+            <!-- Weather App Section (Full Row) -->
+            <div class="col-span-4 p-4 border border-neutral rounded-lg shadow-md">
+                <p>POKOKNYA DISINI ADA WEATHER APP</p>
             </div>
 
-            <!-- Humidity Chart -->
-            <div class="p-4 border border-neutral rounded-lg">
-                <h3 class="text-center font-bold text-lg mb-4">Humidity</h3>
-                <Line :data="JSON.parse(JSON.stringify(HumidityData))" :options="chartOptions" />
+            <!-- Calendar Section (3/4 Lebar) -->
+            <div class="col-span-3 rounded-lg shadow-md">
+                <ScheduleXCalendar :calendar-app="calendarApp" @event-click="onEventClick" />
             </div>
 
-            <!-- Soil Moisture Chart -->
-            <div class="p-4 border border-neutral rounded-lg">
-                <h3 class="text-center font-bold text-lg mb-4">Soil Moisture</h3>
-                <Line :data="JSON.parse(JSON.stringify(soilMoistureData))" :options="chartOptions" />
+            <!-- Notification Section (1/4 Lebar) -->
+            <div class="col-span-1 p-4 border border-neutral rounded-lg shadow-md">
+                <p>POKOKNYA DISINI ADA FITUR NOTIFIKASI</p>
             </div>
-        </div>
-        <div v-else class="w-full mt-8 text-center border border-neutral rounded-lg shadow-md p-4">
-            <p>Loading charts...</p>
+
+            <!-- Loader atau Combined Chart Section (Full Row) -->
+            <div class="col-span-4 mt-4 p-4 border border-neutral rounded-lg shadow-lg">
+                <div v-if="isLoading" class="w-full text-center">
+                    <div class="loading loading-spinner loading-lg"></div>
+                    <p class="mt-4 text-gray-600">Mendapatkan Data...</p>
+                </div>
+
+                <div v-else>
+                    <h3 class="text-center font-bold text-lg mb-4">
+                        Data Sensor
+                    </h3>
+                    <Line :data="JSON.parse(JSON.stringify(combinedChartData))" :options="chartOptions" />
+                </div>
+            </div>
+
         </div>
     </div>
 </template>
 
 <script setup>
-import axios from 'axios';
 import customFetch from '@/utils/customFetch';
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useAuthStore } from '@/stores/Auth';
@@ -56,7 +56,6 @@ import {
     Filler,
 } from "chart.js";
 
-// Registrasi ChartJS
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler);
 
 import { ScheduleXCalendar } from "@schedule-x/vue";
@@ -87,37 +86,28 @@ const calendarApp = createCalendar({
 });
 
 const AuthStore = useAuthStore();
-
-const tempHumData = ref({
+const isLoading = ref(true); // State untuk loader
+const combinedChartData = ref({
     labels: [],
     datasets: [
         {
             label: "Temperature (°C)",
             data: [],
+            borderColor: "rgba(255, 99, 132, 1)",
             backgroundColor: "rgba(255, 99, 132, 0.2)",
             fill: true,
         },
-    ],
-});
-
-const HumidityData = ref({
-    labels: [],
-    datasets: [
         {
             label: "Humidity (%)",
             data: [],
+            borderColor: "rgba(54, 162, 235, 1)",
             backgroundColor: "rgba(54, 162, 235, 0.2)",
             fill: true,
         },
-    ],
-});
-
-const soilMoistureData = ref({
-    labels: [],
-    datasets: [
         {
             label: "Soil Moisture (%)",
             data: [],
+            borderColor: "rgba(75, 192, 192, 1)",
             backgroundColor: "rgba(75, 192, 192, 0.2)",
             fill: true,
         },
@@ -127,63 +117,37 @@ const soilMoistureData = ref({
 const chartOptions = {
     responsive: true,
     plugins: {
-        legend: {
-            position: "top",
-        },
-        title: {
-            display: true,
-            text: "Sensor Data",
-        },
+        legend: { position: "top" },
     },
 };
 
-// Fungsi untuk menambahkan data baru ke grafik
+// Fungsi menambahkan data ke chart
 const appendToCharts = (deviceData) => {
-    const timestamp = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const timestamp = new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
 
-    // Hindari duplikasi data di setiap grafik
-    if (!tempHumData.value.labels.includes(timestamp)) {
-        // Update Temperature Data
-        tempHumData.value.labels.push(timestamp);
-        tempHumData.value.datasets[0].data.push(parseFloat(deviceData.temperature?.value || 0));
+    if (!combinedChartData.value.labels.includes(timestamp)) {
+        combinedChartData.value.labels.push(timestamp);
 
-        // Update Humidity Data
-        HumidityData.value.labels.push(timestamp);
-        HumidityData.value.datasets[0].data.push(parseFloat(deviceData.humidity?.value || 0));
-
-        // Update Soil Moisture Data
-        soilMoistureData.value.labels.push(timestamp);
-        soilMoistureData.value.datasets[0].data.push(parseFloat(deviceData.soilMoisture?.value || 0));
-    } else {
-        console.warn(`Data for timestamp ${timestamp} already exists.`);
+        // Tambahkan data ke setiap dataset
+        combinedChartData.value.datasets[0].data.push(parseFloat(deviceData.temperature?.value || 0));
+        combinedChartData.value.datasets[1].data.push(parseFloat(deviceData.humidity?.value || 0));
+        combinedChartData.value.datasets[2].data.push(parseFloat(deviceData.soilMoisture?.value || 0));
     }
 
-    // Batasi jumlah data maksimal di setiap grafik
-    const maxDataPoints = 20; // Sesuaikan sesuai kebutuhan
-
-    if (tempHumData.value.labels.length > maxDataPoints) {
-        tempHumData.value.labels.shift();
-        tempHumData.value.datasets[0].data.shift();
-    }
-
-    if (HumidityData.value.labels.length > maxDataPoints) {
-        HumidityData.value.labels.shift();
-        HumidityData.value.datasets[0].data.shift();
-    }
-
-    if (soilMoistureData.value.labels.length > maxDataPoints) {
-        soilMoistureData.value.labels.shift();
-        soilMoistureData.value.datasets[0].data.shift();
+    // Batasi jumlah data maksimum
+    const maxDataPoints = 20;
+    if (combinedChartData.value.labels.length > maxDataPoints) {
+        combinedChartData.value.labels.shift();
+        combinedChartData.value.datasets.forEach((dataset) => dataset.data.shift());
     }
 };
 
 // Fungsi untuk fetch data dari API
+
 let isFetching = false;
+
 const fetchData = async () => {
-    if (isFetching) {
-        console.warn("Fetch already in progress, skipping...");
-        return;
-    }
+    if (isFetching) return;
 
     isFetching = true;
     try {
@@ -196,23 +160,16 @@ const fetchData = async () => {
 
         const userId = AuthStore.currentUser.id;
         const response = await customFetch.get(`/device/check-by-user/${userId}`, {
-            headers: {
-                Authorization: `Bearer ${AuthStore.tokenUser}`,
-            },
+            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
         });
 
         const devices = response.data.data;
-        console.log("Devices fetched:", devices);
 
         for (const device of devices) {
             try {
-                const detailResponse = await axios.get(
+                const detailResponse = await customFetch.get(
                     `http://localhost:3000/api/dashboard/${device.devices_id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${AuthStore.tokenUser}`,
-                        },
-                    }
+                    { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
                 );
 
                 const detailData = detailResponse.data.data;
@@ -224,7 +181,7 @@ const fetchData = async () => {
                     temperature: detailData.temperature,
                 };
 
-                // Tambahkan data ke grafik
+                // Tambahkan data ke chart
                 appendToCharts(deviceData);
             } catch (error) {
                 console.error(`Error fetching device ${device.devices_id}:`, error);
@@ -234,8 +191,10 @@ const fetchData = async () => {
         console.error("Error fetching data:", error);
     } finally {
         isFetching = false;
+        isLoading.value = false; // Matikan loader setelah data selesai dimuat
     }
 };
+
 
 // Interval fetch
 let fetchInterval = null;
@@ -255,3 +214,10 @@ const onEventClick = (event) => {
     alert(`Event clicked: ${event.title}`);
 };
 </script>
+
+<style scoped>
+.sx-vue-calendar-wrapper {
+    height: 600px;
+    max-height: 90vh;
+}
+</style>

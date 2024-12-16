@@ -53,7 +53,6 @@ Route::prefix('v1')->group(function () {
 
             Route::post('/link/{devices_id}', [DeviceController::class, 'showDevice']);
             Route::delete('/unlink/{devices_id}', [DeviceController::class, 'removeShowDevice']);
-
         });
     });
 

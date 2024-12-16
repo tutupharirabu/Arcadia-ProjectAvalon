@@ -1,20 +1,30 @@
 <template>
-    <div class="flex h-screen bg-base-100">
-      <!-- Drawer -->
-      <Drawer />
-  
+  <div class="flex h-screen bg-base-100">
+    <!-- Drawer -->
+    <Drawer @toggle="handleDrawerToggle" />
+
+    <!-- Main Content -->
+    <div class="flex-grow flex flex-col transition-all duration-300">
+      <!-- Header -->
+      <Header />
+
       <!-- Main Content -->
-      <div class="flex-grow flex flex-col">
-        <Header />
-        <main class="flex-grow overflow-auto p-4">
-          <RouterView />
-        </main>
-      </div>
+      <main class="flex-grow overflow-auto p-4">
+        <RouterView />
+      </main>
     </div>
-  </template>
-  
-  <script setup>
-  import { RouterView } from "vue-router";
-  import Header from "@/components/Header/HeaderPetani.vue";
-  import Drawer from "@/components/Drawer/DrawerPetani.vue";
-  </script>
+  </div>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import { RouterView } from "vue-router";
+import Header from "@/components/Header/HeaderPetani.vue";
+import Drawer from "@/components/Drawer/DrawerPetani.vue";
+
+const isDrawerOpen = ref(true);
+
+const handleDrawerToggle = (state) => {
+  isDrawerOpen.value = state;
+};
+</script>

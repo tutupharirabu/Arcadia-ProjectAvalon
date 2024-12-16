@@ -66,7 +66,7 @@ class HistoricalDataController extends Controller
 
             // Periksa apakah perangkat ditemukan
             if (!$device) {
-                return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
+                return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], status: 404);
             }
 
             // Periksa apakah perangkat terhubung dengan pengguna
