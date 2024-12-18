@@ -17,6 +17,23 @@ const router = createRouter({
           name: 'HomeLandingPage',
           component: () => import('@/views/LandingPage/HomeView.vue'),
         },
+        {
+          path: 'tentang-kami', // Tambahkan rute ini
+          name: 'AboutUs',
+          component: () => import('@/views/LandingPage/AboutUs.vue'),
+        },
+        {
+          path: 'kontak-kami', // Tambahkan rute ini
+          name: 'ContactUs',
+          component: () => import('@/views/LandingPage/Contact.vue'),
+        },
+        // router/index.js
+        {
+          path: 'arcadia-partner',
+          name: 'ArcadiaPartner',
+          component: () => import('@/views/LandingPage/ArcadiaPartner.vue'),
+        }
+
       ],
     },
 
