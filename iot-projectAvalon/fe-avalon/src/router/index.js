@@ -33,7 +33,6 @@ const router = createRouter({
           name: 'ArcadiaPartner',
           component: () => import('@/views/LandingPage/ArcadiaPartner.vue'),
         }
-
       ],
     },
 

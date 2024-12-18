@@ -1,35 +1,20 @@
 <template>
-  <div>
+  <div class="container min-h-screen mx-auto py-16 px-4">
     <!-- Hero Section -->
-    <div
-      class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40"
-      data-aos="fade-up"
-    >
+    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40" data-aos="fade-up">
       <!-- Subheading -->
-      <h2
-        class="text-lg font-medium text-pink-600 mb-2"
-        data-aos="fade-up"
-        data-aos-delay="100"
-      >
+      <h2 class="text-lg font-medium text-pink-600 mb-2" data-aos="fade-up" data-aos-delay="100">
         Arcadia Flora Tech
       </h2>
 
       <!-- Main Heading -->
-      <h1
-        class="text-4xl md:text-6xl font-bold text-pink-800 leading-tight"
-        data-aos="fade-up"
-        data-aos-delay="200"
-      >
+      <h1 class="text-4xl md:text-6xl font-bold text-pink-800 leading-tight" data-aos="fade-up" data-aos-delay="200">
         Berkebun Cerdas <span class="text-pink-600">Menebar Keindahan</span>
       </h1>
 
       <!-- Description Box -->
-      <div
-        class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-md text-base md:text-lg text-gray-800"
-        style="max-width: 90%;"
-        data-aos="fade-up"
-        data-aos-delay="300"
-      >
+      <div class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-md text-base md:text-lg text-gray-800"
+        style="max-width: 90%;" data-aos="fade-up" data-aos-delay="300">
         Enhance Your Agricultural Yields with Our Smart Technology.
       </div>
     </div>
@@ -40,13 +25,8 @@
         Daftar Arcadia Partner
       </router-link>
     </div>
-
-    <!-- About Section -->
-
   </div>
 </template>
-y
-
 
 <style scoped>
 /* Hero Section Button */

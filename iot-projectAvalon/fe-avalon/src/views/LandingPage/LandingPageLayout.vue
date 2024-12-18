@@ -3,7 +3,7 @@
     <HeaderLanding />
   
     <!-- Main Content -->
-    <main class="mt-20">
+    <main class="mt-24">
       <RouterView />
     </main>
   
