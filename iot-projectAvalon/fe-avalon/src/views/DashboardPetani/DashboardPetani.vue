@@ -55,6 +55,7 @@
 import customFetch from '@/utils/customFetch';
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useAuthStore } from '@/stores/Auth';
+import axios from "axios";
 
 import { Line } from "vue-chartjs";
 import {
@@ -198,8 +199,8 @@ const fetchData = async () => {
         // Loop hanya perangkat yang berstatus "Active"
         for (const device of activeDevices) {
             try {
-                const detailResponse = await customFetch.get(
-                    `http://localhost:3000/api/dashboard/${device.devices_id}`,
+                const detailResponse = await axios.get(
+                    `https://arcadia-nodeserver-development.up.railway.app/api/dashboard/${device.devices_id}`,
                     { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
                 );
 
