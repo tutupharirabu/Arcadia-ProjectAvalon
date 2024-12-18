@@ -112,12 +112,14 @@ class DeviceController extends Controller
         $request->validate([
             'devices_id' => 'required|uuid', // Pastikan devices_id adalah UUID unik
             'device_type' => 'required|string|max:255',
+            'qrcode_url' => 'url',
         ]);
 
         // Simpan data perangkat tanpa users_id
         $device = Device::create([
             'devices_id' => $request->devices_id,
             'device_type' => $request->device_type,
+            'qrcode_url' => $request->qrcode_url,
             'status' => 'Not Linked To User',
         ]);
 
@@ -130,11 +132,12 @@ class DeviceController extends Controller
     /**
      * Tampilkan perangkat berdasarkan devices_id dan hubungkan jika belum ada users_id.
      */
-    public function showDevice($devices_id)
+    public function linkDevice($devices_id)
     {
         // Cari perangkat berdasarkan devices_id
         $device = Device::where('devices_id', $devices_id)->first();
 
+        // Jika perangkat tidak ditemukan
         if (!$device) {
             return response()->json([
                 'status' => 'error',
@@ -145,16 +148,22 @@ class DeviceController extends Controller
         // Ambil userId dari pengguna yang sedang login
         $userId = auth('api')->user()->users_id; // Pastikan `auth()` mengambil data pengguna yang terautentikasi
 
-        // Jika perangkat belum memiliki user_id, hubungkan dengan user_id pengguna yang sedang login
-        if (!$device->users_id) {
-            $device->users_id = $userId;
-            $device->status = "Active";
-            $device->save();
+        // Jika perangkat sudah memiliki users_id, kembalikan error
+        if ($device->users_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat sudah ditautkan dengan pengguna lain.',
+            ], 400); // 400 Bad Request
         }
+
+        // Jika perangkat belum memiliki user_id, hubungkan dengan user_id pengguna yang sedang login
+        $device->users_id = $userId;
+        $device->status = "Active";
+        $device->save();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Data perangkat ditemukan.',
+            'message' => 'Perangkat berhasil ditautkan.',
             'data' => $device,
         ], 200);
     }

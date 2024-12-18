@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('status');
             $table->string('location')->nullable();
             $table->string('description')->nullable();
+            $table->string('qrcode_url')->nullable();
             $table->uuid('users_id')->nullable();
             $table->foreign('users_id')->references('users_id')->on('users')->onDelete('cascade');
             $table->timestamps();

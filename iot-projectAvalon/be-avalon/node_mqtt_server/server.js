@@ -8,6 +8,9 @@ const axios = require("axios");
 const Redis = require("ioredis");
 const schedule = require("node-schedule");
 const { v4: uuidv4 } = require("uuid");
+const QRCode = require("qrcode");
+
+const cloudinary = require("./cloudinaryConfig");
 const authenticateToken = require("./middleware/authMiddleware");
 
 // Inisialisasi aplikasi Express
@@ -47,12 +50,41 @@ async function storeUserToken(users_id, token) {
     }
 }
 
+// Fungsi untuk generate QR Code
+async function generateQRCode(deviceId) {
+    try {
+        // Generate QR Code ke dalam Data URL
+        const qrCodeDataURL = await QRCode.toDataURL(deviceId);
+        console.log("[INFO] QR Code berhasil dibuat untuk Device ID:", deviceId);
+        return qrCodeDataURL;
+    } catch (error) {
+        console.error("[ERROR] Gagal generate QR Code:", error.message);
+        throw error;
+    }
+}
+
+// Fungsi untuk mengunggah QR Code ke Cloudinary
+async function uploadQRCodeToCloudinary(qrCodeDataURL, deviceId) {
+    try {
+        const result = await cloudinary.uploader.upload(qrCodeDataURL, {
+            folder: "arcadia-qr-code", // Folder di Cloudinary
+            public_id: `qrcode_${deviceId}`, // Nama file di Cloudinary
+            overwrite: true,
+        });
+
+        console.log("[POST] QR Code berhasil diunggah ke Cloudinary:", result.secure_url);
+        return result.secure_url; // Kembalikan URL gambar
+    } catch (error) {
+        console.error("[ERROR] Gagal mengunggah QR Code ke Cloudinary:", error.message);
+        throw error;
+    }
+}
+
 // Fungsi untuk memeriksa apakah perangkat sudah ada di Laravel
 async function checkDeviceExist(deviceId) {
     try {
         const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-public/${deviceId}`);
         if (response.data.status === "success") {
-            console.log(`[INFO] Perangkat dengan Device ID ${deviceId} sudah ada.`);
             return true;
         }
     } catch (error) {
@@ -66,18 +98,42 @@ async function checkDeviceExist(deviceId) {
 }
 
 // Fungsi untuk menyimpan perangkat ke Laravel jika belum ada
-async function saveDeviceIfNotExist(deviceId, deviceType) {
+async function saveDeviceToLaravel(deviceId, deviceType, qrCodeUrl) {
     try {
-        const deviceExist = await checkDeviceExist(deviceId);
-        if (!deviceExist) {
-            const response = await axios.post(`${process.env.LARAVEL_API_URL}/device`, {
-                devices_id: deviceId,
-                device_type: deviceType,
-            });
-            console.log(`[POST] Perangkat berhasil disimpan ke Laravel: ${deviceId}`);
-        }
+        const response = await axios.post(`${process.env.LARAVEL_API_URL}/device`, {
+            devices_id: deviceId,
+            device_type: deviceType,
+            qrcode_url: qrCodeUrl,
+        });
+        console.log(`[POST] Perangkat berhasil disimpan ke Laravel: ${deviceId}`);
     } catch (error) {
         console.error("[ERROR] Gagal menyimpan perangkat ke Laravel:", error.message);
+        throw error;
+    }
+}
+
+// Fungsi utama
+async function handleDevice(deviceId, deviceType) {
+    try {
+        // Langkah 1: Periksa apakah perangkat sudah ada
+        const deviceExist = await checkDeviceExist(deviceId);
+        if (deviceExist) {
+            console.log(`[INFO] Perangkat sudah ada: ${deviceId}`);
+            return; // Keluar jika perangkat sudah ada
+        }
+
+        // Langkah 2: Generate QR Code jika perangkat belum ada
+        const qrCodeDataURL = await generateQRCode(deviceId);
+
+        // Langkah 3: Unggah QR Code ke Cloudinary
+        const qrCodeUrl = await uploadQRCodeToCloudinary(qrCodeDataURL, deviceId);
+
+        // Langkah 4: Simpan perangkat ke Laravel
+        await saveDeviceToLaravel(deviceId, deviceType, qrCodeUrl);
+
+        console.log("[INFO] Proses selesai. QR Code URL:", qrCodeUrl);
+    } catch (error) {
+        console.error("[ERROR] Terjadi kesalahan:", error.message);
     }
 }
 
@@ -110,10 +166,12 @@ function calculateAverages(buffer) {
     const averages = {};
 
     for (const parameter in buffer) {
-        const values = buffer[parameter];
+        const values = buffer[parameter].filter((val) => !isNaN(parseFloat(val))); // Hanya nilai valid
         if (values.length > 0) {
             const sum = values.reduce((acc, val) => acc + parseFloat(val), 0);
             averages[parameter] = sum / values.length;
+        } else {
+            averages[parameter] = null; // Tetapkan null jika tidak ada data valid
         }
     }
 
@@ -161,87 +219,100 @@ let currentDeviceType = null;
 let messageQueue = []; // Antrian untuk pesan MQTT
 let isProcessingQueue = false; // Flag untuk memproses pesan
 
+const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature", "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture"];
+
+// Pemetaan nama feed ke properti buffer
+const bufferKeyMap = {
+    "proto-one-monitoring-1.temperature": "temperature",
+    "proto-one-monitoring-1.humidity": "humidity",
+    "proto-one-monitoring-1.soil-moisture": "soil_moisture"
+};
+
 // Fungsi untuk memproses antrian pesan
 async function processQueue() {
-    if (isProcessingQueue) return; // Cegah proses ganda
+    if (isProcessingQueue) return;
     isProcessingQueue = true;
 
     try {
         while (messageQueue.length > 0) {
-            const { topic, message } = messageQueue.shift(); // Ambil pesan dari antrian
+            const { topic, message } = messageQueue.shift();
             const payload = message.toString().trim();
 
-            try {
-                if (topic === process.env.TOPIC_DEVICE_ID) {
+            console.log(`[INFO] Pesan diterima. Topik: ${topic}, Payload: ${payload}`);
+
+            // Parsing nama feed dari topik
+            const feedType = topic.split("/").pop(); // Ambil bagian terakhir dari topik
+
+            // Filter hanya topik yang valid
+            if (!validFeeds.includes(feedType)) {
+                console.log(`[WARNING] Topik tidak dikenal: ${feedType}`);
+                continue;
+            }
+
+            switch (feedType) {
+                case "proto-one-monitoring-1.device-id":
                     currentDeviceId = payload;
                     console.log(`[GET] Device ID diterima: ${currentDeviceId}`);
-                } else if (topic === process.env.TOPIC_DEVICE_TYPE) {
+                    break;
+
+                case "proto-one-monitoring-1.device-type":
                     currentDeviceType = payload;
                     console.log(`[GET] Tipe perangkat diterima: ${currentDeviceType}`);
-                } else {
-                    const parameterMap = {
-                        [process.env.TOPIC_TEMPERATURE]: "temperature",
-                        [process.env.TOPIC_HUMIDITY]: "humidity",
-                        [process.env.TOPIC_SOIL_MOISTURE]: "soil_moisture",
-                    };
+                    break;
 
-                    const parameter = parameterMap[topic];
-                    if (parameter && currentDeviceId) {
+                case "proto-one-monitoring-1.temperature":
+                case "proto-one-monitoring-1.humidity":
+                case "proto-one-monitoring-1.soil-moisture":
+                    if (currentDeviceId) {
                         // Simpan data ke Redis
-                        await saveToRedis(parameter, payload, currentDeviceId);
-                        console.log(`[POST] Data ${parameter} berhasil disimpan ke Redis untuk Device ID ${currentDeviceId}`);
+                        await saveToRedis(feedType, payload, currentDeviceId);
+                        console.log(`[POST] Data ${feedType} disimpan untuk Device ID ${currentDeviceId}`);
 
-                        // Tambahkan data ke buffer
+                        // Tambahkan ke buffer
                         if (!dataBuffer[currentDeviceId]) {
                             dataBuffer[currentDeviceId] = { temperature: [], humidity: [], soil_moisture: [] };
                         }
 
-                        dataBuffer[currentDeviceId][parameter].push(payload);
-                        console.log(`[POST] Data ${parameter} diproses ke Buffer untuk Device ID ${currentDeviceId}: ${payload}`);
+                        const bufferKey = bufferKeyMap[feedType];
+                        if (bufferKey) {
+                            if (!dataBuffer[currentDeviceId][bufferKey]) {
+                                dataBuffer[currentDeviceId][bufferKey] = []; // Inisialisasi jika belum ada
+                            }
+                            dataBuffer[currentDeviceId][bufferKey].push(payload);
+                            console.log(`[POST] Data ${bufferKey} diproses ke Buffer untuk Device ID ${currentDeviceId}: ${payload}`);
+                        }
                     } else {
-                        console.log("[WARNING] Topik atau Device ID tidak valid, data diabaikan.");
+                        console.log("[WARNING] Device ID belum tersedia. Data diabaikan.");
                     }
-                }
+                    break;
+            }
 
-                // Jika Device ID dan Tipe Perangkat tersedia, simpan perangkat
-                if (currentDeviceId && currentDeviceType) {
-                    await saveDeviceIfNotExist(currentDeviceId, currentDeviceType);
-                } else {
-                    console.log("[INFO] Device ID atau tipe perangkat belum lengkap. Menunggu data berikutnya.");
-                }
-            } catch (error) {
-                console.error(`[ERROR] Terjadi kesalahan saat memproses topik ${topic}: ${error.message}`);
+            // Jika Device ID dan Device Type tersedia, simpan perangkat
+            if (currentDeviceId && currentDeviceType) {
+                await handleDevice(currentDeviceId, currentDeviceType);
             }
         }
-
-        console.log("[END] Semua pesan dalam antrian telah diproses.\n");
     } finally {
-        isProcessingQueue = false; // Reset flag
+        isProcessingQueue = false;
     }
 }
 
-// Setup MQTT
+// Setup MQTT dengan wildcard
 mqttClient.on("connect", () => {
     console.log("[INFO] Terhubung ke broker MQTT.");
 
-    // Langganan topik MQTT
-    mqttClient.subscribe(process.env.TOPIC_DEVICE_ID, (err) => {
-        if (err) console.error("[ERROR] Gagal berlangganan TOPIC_DEVICE_ID:", err.message);
-    });
-    mqttClient.subscribe(process.env.TOPIC_DEVICE_TYPE, (err) => {
-        if (err) console.error("[ERROR] Gagal berlangganan TOPIC_DEVICE_TYPE:", err.message);
-    });
-    mqttClient.subscribe(process.env.TOPIC_TEMPERATURE, (err) => {
-        if (err) console.error("[ERROR] Gagal berlangganan TOPIC_TEMPERATURE:", err.message);
-    });
-    mqttClient.subscribe(process.env.TOPIC_HUMIDITY, (err) => {
-        if (err) console.error("[ERROR] Gagal berlangganan TOPIC_HUMIDITY:", err.message);
-    });
-    mqttClient.subscribe(process.env.TOPIC_SOIL_MOISTURE, (err) => {
-        if (err) console.error("[ERROR] Gagal berlangganan TOPIC_SOIL_MOISTURE:", err.message);
+    // Langganan semua topik dengan wildcard
+    const wildcardTopic = `${process.env.MQTT_USERNAME}/feeds/+`;
+    mqttClient.subscribe(wildcardTopic, (err) => {
+        if (err) {
+            console.error("[ERROR] Gagal berlangganan wildcard topik:", err.message);
+        } else {
+            console.log(`[INFO] Berhasil berlangganan wildcard topik: ${wildcardTopic}`);
+        }
     });
 });
 
+// Event untuk menerima pesan
 mqttClient.on("message", (topic, message) => {
     messageQueue.push({ topic, message }); // Tambahkan pesan ke antrian
     processQueue(); // Mulai memproses antrian

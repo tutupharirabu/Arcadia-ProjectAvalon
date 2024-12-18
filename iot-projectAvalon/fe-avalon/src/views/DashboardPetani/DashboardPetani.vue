@@ -11,7 +11,7 @@
 
             <!-- Calendar Section (3/4 Lebar) -->
             <div class="col-span-3 rounded-lg shadow-md">
-                <ScheduleXCalendar :calendar-app="calendarApp" @event-click="onEventClick" />
+                <ScheduleXCalendar :calendar-app="calendarApp" />
             </div>
 
             <!-- Notification Section (1/4 Lebar) -->
@@ -19,18 +19,31 @@
                 <p>POKOKNYA DISINI ADA FITUR NOTIFIKASI</p>
             </div>
 
-            <!-- Loader atau Combined Chart Section (Full Row) -->
+            <!-- Loader atau Chart Section Dinamis -->
             <div class="col-span-4 mt-4 p-4 border border-neutral rounded-lg shadow-lg">
+                <!-- Loader -->
                 <div v-if="isLoading" class="w-full text-center">
                     <div class="loading loading-spinner loading-lg"></div>
                     <p class="mt-4 text-gray-600">Mendapatkan Data...</p>
                 </div>
 
+                <!-- Charts per Device -->
                 <div v-else>
-                    <h3 class="text-center font-bold text-lg mb-4">
-                        Data Sensor
-                    </h3>
-                    <Line :data="JSON.parse(JSON.stringify(combinedChartData))" :options="chartOptions" />
+                    <!-- Jika chartsData kosong -->
+                    <div v-if="Object.keys(chartsData).length === 0" class="text-center text-neutral">
+                        <p class="font-semibold">Tidak ada perangkat aktif yang tersedia.</p>
+                        <p>Silakan periksa status perangkat Anda atau tambahkan perangkat baru.</p>
+                    </div>
+
+                    <!-- Jika chartsData memiliki data -->
+                    <div v-else>
+                        <div v-for="(chart, deviceId) in chartsData" :key="deviceId" class="mb-8">
+                            <h3 class="text-center font-bold text-lg mb-4">
+                                Data Sensor untuk Alat {{ chart.name }}
+                            </h3>
+                            <Line :data="JSON.parse(JSON.stringify(chart))" :options="chartOptions" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -87,32 +100,8 @@ const calendarApp = createCalendar({
 
 const AuthStore = useAuthStore();
 const isLoading = ref(true); // State untuk loader
-const combinedChartData = ref({
-    labels: [],
-    datasets: [
-        {
-            label: "Temperature (°C)",
-            data: [],
-            borderColor: "rgba(255, 99, 132, 1)",
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
-            fill: true,
-        },
-        {
-            label: "Humidity (%)",
-            data: [],
-            borderColor: "rgba(54, 162, 235, 1)",
-            backgroundColor: "rgba(54, 162, 235, 0.2)",
-            fill: true,
-        },
-        {
-            label: "Soil Moisture (%)",
-            data: [],
-            borderColor: "rgba(75, 192, 192, 1)",
-            backgroundColor: "rgba(75, 192, 192, 0.2)",
-            fill: true,
-        },
-    ],
-});
+const chartsData = ref({}); // Menyimpan data untuk setiap device
+const devicesInfo = ref([]); // Menyimpan informasi nama perangkat
 
 const chartOptions = {
     responsive: true,
@@ -121,29 +110,61 @@ const chartOptions = {
     },
 };
 
-// Fungsi menambahkan data ke chart
-const appendToCharts = (deviceData) => {
+// Fungsi inisialisasi data chart untuk setiap perangkat
+const initializeChartForDevice = (deviceId, deviceName) => {
+    if (!chartsData.value[deviceId]) {
+        chartsData.value[deviceId] = {
+            name: deviceName || `Device ${deviceId}`, // Gunakan nama perangkat atau default
+            labels: [],
+            datasets: [
+                {
+                    label: "Temperature (°C)",
+                    data: [],
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    backgroundColor: "rgba(255, 99, 132, 0.2)",
+                    fill: true,
+                },
+                {
+                    label: "Humidity (%)",
+                    data: [],
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    backgroundColor: "rgba(54, 162, 235, 0.2)",
+                    fill: true,
+                },
+                {
+                    label: "Soil Moisture (%)",
+                    data: [],
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    fill: true,
+                },
+            ],
+        };
+    }
+};
+
+// Fungsi menambahkan data ke chart perangkat tertentu
+const appendToDeviceChart = (deviceId, deviceData) => {
+    const chart = chartsData.value[deviceId];
     const timestamp = new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
 
-    if (!combinedChartData.value.labels.includes(timestamp)) {
-        combinedChartData.value.labels.push(timestamp);
+    if (!chart.labels.includes(timestamp)) {
+        chart.labels.push(timestamp);
 
-        // Tambahkan data ke setiap dataset
-        combinedChartData.value.datasets[0].data.push(parseFloat(deviceData.temperature?.value || 0));
-        combinedChartData.value.datasets[1].data.push(parseFloat(deviceData.humidity?.value || 0));
-        combinedChartData.value.datasets[2].data.push(parseFloat(deviceData.soilMoisture?.value || 0));
+        chart.datasets[0].data.push(parseFloat(deviceData.temperature));
+        chart.datasets[1].data.push(parseFloat(deviceData.humidity));
+        chart.datasets[2].data.push(parseFloat(deviceData.soilMoisture));
     }
 
     // Batasi jumlah data maksimum
     const maxDataPoints = 20;
-    if (combinedChartData.value.labels.length > maxDataPoints) {
-        combinedChartData.value.labels.shift();
-        combinedChartData.value.datasets.forEach((dataset) => dataset.data.shift());
+    if (chart.labels.length > maxDataPoints) {
+        chart.labels.shift();
+        chart.datasets.forEach((dataset) => dataset.data.shift());
     }
 };
 
 // Fungsi untuk fetch data dari API
-
 let isFetching = false;
 
 const fetchData = async () => {
@@ -165,7 +186,17 @@ const fetchData = async () => {
 
         const devices = response.data.data;
 
-        for (const device of devices) {
+        // Filter hanya perangkat yang statusnya "Active"
+        const activeDevices = devices.filter(device => device.status === "Active");
+
+        // Simpan informasi perangkat aktif
+        devicesInfo.value = activeDevices.map(device => ({
+            id: device.devices_id,
+            name: device.device_name || `Device ${device.devices_id}`,
+        }));
+
+        // Loop hanya perangkat yang berstatus "Active"
+        for (const device of activeDevices) {
             try {
                 const detailResponse = await customFetch.get(
                     `http://localhost:3000/api/dashboard/${device.devices_id}`,
@@ -174,15 +205,38 @@ const fetchData = async () => {
 
                 const detailData = detailResponse.data.data;
 
+                // Inisialisasi chart untuk setiap device
+                initializeChartForDevice(device.devices_id, device.device_name);
+
                 const deviceData = {
-                    deviceId: device.devices_id,
-                    soilMoisture: detailData.soil_moisture,
-                    humidity: detailData.humidity,
-                    temperature: detailData.temperature,
+                    temperature: 0,
+                    humidity: 0,
+                    soilMoisture: 0,
                 };
 
-                // Tambahkan data ke chart
-                appendToCharts(deviceData);
+                // Ambil data sensor secara dinamis
+                for (const key in detailData) {
+                    if (detailData.hasOwnProperty(key) && key.startsWith("proto-one-")) {
+                        const [, parameter] = key.split("."); // Extract parameter seperti temperature
+                        if (parameter) {
+                            // Gunakan bracket notation untuk menangani karakter "-"
+                            switch (parameter) {
+                                case "temperature":
+                                    deviceData.temperature = parseFloat(detailData[key]?.value || 0);
+                                    break;
+                                case "humidity":
+                                    deviceData.humidity = parseFloat(detailData[key]?.value || 0);
+                                    break;
+                                case "soil-moisture":
+                                    deviceData.soilMoisture = parseFloat(detailData[key]?.value || 0);
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // Tambahkan data ke chart per device
+                appendToDeviceChart(device.devices_id, deviceData);
             } catch (error) {
                 console.error(`Error fetching device ${device.devices_id}:`, error);
             }
@@ -191,10 +245,9 @@ const fetchData = async () => {
         console.error("Error fetching data:", error);
     } finally {
         isFetching = false;
-        isLoading.value = false; // Matikan loader setelah data selesai dimuat
+        isLoading.value = false;
     }
 };
-
 
 // Interval fetch
 let fetchInterval = null;
@@ -209,10 +262,6 @@ onBeforeUnmount(() => {
         clearInterval(fetchInterval);
     }
 });
-
-const onEventClick = (event) => {
-    alert(`Event clicked: ${event.title}`);
-};
 </script>
 
 <style scoped>

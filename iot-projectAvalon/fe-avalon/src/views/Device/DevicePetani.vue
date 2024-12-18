@@ -22,27 +22,24 @@
 
                 <!-- Kontrol Perangkat -->
                 <div class="flex flex-wrap items-center justify-end space-x-2 space-y-2 md:space-y-0">
-                    <!-- Toggle Switch -->
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" :checked="device.status === 'Active'"
-                            @change="toggleDevice(device.deviceId, device.status === 'Active' ? 'Inactive' : 'Active')"
-                            class="sr-only peer" />
-                        <div
-                            class="w-16 h-8 bg-gray-300 rounded-full peer-focus:outline-none peer-checked:bg-green-500 relative">
-                            <div
-                                class="absolute top-0.5 left-1 h-7 w-7 bg-white rounded-full transition-transform peer-checked:translate-x-full">
-                            </div>
-                        </div>
-                        <span class="ml-3 text-md font-medium">
-                            {{ device.status === "Active" ? "Aktif" : "Nonaktif" }}
+                    <!-- Button Aktif/Nonaktif -->
+                    <button :class="[
+                        'btn px-4 py-2 rounded-md font-semibold text-white',
+                        device.status === 'Active' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600',
+                        loadingStatus[device.deviceId] ? 'opacity-50 cursor-not-allowed' : ''
+                    ]" :disabled="loadingStatus[device.deviceId] || isLoading"
+                        @click="toggleDevice(device.deviceId, device.status === 'Active' ? 'Inactive' : 'Active')">
+                        <span v-if="loadingStatus[device.deviceId]" class="loading loading-spinner"></span>
+                        <span v-else>
+                            {{ device.status === 'Active' ? 'Nonaktifkan' : 'Aktifkan' }}
                         </span>
-                    </label>
+                    </button>
 
                     <!-- Unlink Button -->
-                    <button
-                        class="btn bg-warning text-warning-content py-2 rounded hover:bg-warning-focus w-full md:w-auto">
+                    <button class="btn bg-red-500 text-primary-content py-2 rounded hover:bg-red-600 w-full md:w-auto"
+                        :disabled="loadingUnlink[device.deviceId]" @click="unlinkDevice(device.deviceId)">
                         <span v-if="loadingUnlink[device.deviceId]" class="loading loading-spinner"></span>
-                        <span v-else @click="unlinkDevice(device.deviceId)">Unlink</span>
+                        <span v-else>Unlink</span>
                     </button>
 
                     <!-- Detail Button -->
@@ -66,7 +63,8 @@
         <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-sm">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
-            <span v-if="modalTitle === 'Proses Berhasil'" class="loading loading-spinner loading-lg text-primary mt-4"></span>
+            <span v-if="modalTitle === 'Proses Berhasil'"
+                class="loading loading-spinner loading-lg text-primary mt-4"></span>
             <!-- Tombol hanya ditampilkan jika ada error -->
             <button v-if="modalTitle === 'Proses Gagal'" @click="showModal = false" class="btn btn-primary mt-4">
                 OK
@@ -81,10 +79,13 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
 
+const AuthStore = useAuthStore();
+
 // State untuk menyimpan daftar perangkat
 const devices = ref([]);
-const isLoading = ref(true); // Loader state
-const loadingUnlink = ref({}); // State loader untuk setiap unlink
+const isLoading = ref(true); // Global loader
+const loadingStatus = ref({}); // Loader untuk tombol aktif/nonaktif
+const loadingUnlink = ref({}); // Loader untuk tombol unlink
 const router = useRouter(); // Inisialisasi router
 
 // Modal state
@@ -98,9 +99,7 @@ let pollingInterval = null;
 // Fetch daftar perangkat
 const fetchDevices = async () => {
     try {
-        const AuthStore = useAuthStore();
         const userId = AuthStore.currentUser.id;
-
         const response = await customFetch.get(`/device/check-by-user/${userId}`, {
             headers: {
                 Authorization: `Bearer ${AuthStore.tokenUser}`,
@@ -144,7 +143,7 @@ const unlinkDevice = async (deviceId) => {
 
         if (response.data.status === "success") {
             modalTitle.value = "Proses Berhasil";
-            modalMessage.value = "Perangkat berhasil diputuskan!";
+            modalMessage.value = "Perangkat berhasil diputuskan~";
             showModal.value = true; // Tampilkan modal sementara
         } else {
             throw new Error(response.data.message || "Gagal memutuskan perangkat.");
@@ -155,6 +154,35 @@ const unlinkDevice = async (deviceId) => {
         showModal.value = true; // Tampilkan modal error
     } finally {
         loadingUnlink.value[deviceId] = false; // Matikan loader
+    }
+};
+
+// Fungsi untuk mengubah status perangkat
+const toggleDevice = async (deviceId, newStatus) => {
+    loadingStatus.value[deviceId] = true; // Aktifkan loader per device
+    try {
+        // Kirim permintaan update status ke API
+        await customFetch.post(
+            `/device/${deviceId}?_method=PUT`,
+            { status: newStatus },
+            { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
+        );
+
+        // Tampilkan pesan berhasil
+        modalTitle.value = "Berhasil";
+        modalMessage.value = `Status perangkat berhasil diubah menjadi ${newStatus === "Active" ? "Aktif" : "Nonaktif"}.`;
+        showModal.value = true;
+
+        // Perbarui status di daftar perangkat
+        const updatedDevice = devices.value.find((device) => device.deviceId === deviceId);
+        if (updatedDevice) updatedDevice.status = newStatus;
+    } catch (error) {
+        console.error("Error updating device status:", error);
+        modalTitle.value = "Error";
+        modalMessage.value = "Gagal mengubah status perangkat.";
+        showModal.value = true;
+    } finally {
+        loadingStatus.value[deviceId] = false; // Nonaktifkan loader
     }
 };
 

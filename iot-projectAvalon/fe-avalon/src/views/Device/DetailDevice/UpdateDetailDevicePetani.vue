@@ -63,13 +63,13 @@
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <<div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
-            <button @click="showModal = false" class="btn btn-primary mt-4">OK</button>
+            <button @click="handleOk" class="btn btn-primary mt-4">OK</button>
         </div>
-    </div>
+        </div>
 </template>
 
 <script setup>
@@ -86,6 +86,7 @@ const showModal = ref(false);
 const modalTitle = ref("");
 const modalMessage = ref("");
 const AuthStore = useAuthStore();
+let timeoutId = null;
 
 // Data Form
 const formData = ref({
@@ -94,6 +95,15 @@ const formData = ref({
     location: "",
     description: "",
 });
+
+// Fungsi untuk menangani tombol OK
+const handleOk = () => {
+    // Hapus timeout jika tombol OK ditekan
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+    }
+    router.push({ name: "DetailDevice", params: { id: route.params.id } });
+};
 
 // Ambil Detail Alat
 const fetchDeviceDetail = async () => {
@@ -146,9 +156,10 @@ const submitForm = async () => {
         modalMessage.value = "Informasi alat berhasil diperbarui!";
         showModal.value = true;
 
-        setTimeout(() => {
+        // Set timeout untuk otomatis redirect setelah 5 detik
+        timeoutId = setTimeout(() => {
             router.push({ name: "DetailDevice", params: { id: route.params.id } });
-        }, 1500);
+        }, 5000);
     } catch (error) {
         console.error("Error updating device data:", error);
         modalTitle.value = "Error";
@@ -179,6 +190,7 @@ const fetchCurrentLocation = () => {
     }
 };
 
+// Inisialisasi
 fetchDeviceDetail();
 </script>
 

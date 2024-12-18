@@ -43,6 +43,7 @@ class Device extends Model
         'status',
         'location',
         'description',
+        'qrcode_url',
         'users_id',
     ];
 

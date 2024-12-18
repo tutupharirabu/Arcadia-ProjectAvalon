@@ -51,7 +51,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/{devices_id}', [DeviceController::class, 'update']);
             Route::delete('/{devices_id}', [DeviceController::class, 'destroy']);
 
-            Route::post('/link/{devices_id}', [DeviceController::class, 'showDevice']);
+            Route::post('/link/{devices_id}', [DeviceController::class, 'linkDevice']);
             Route::delete('/unlink/{devices_id}', [DeviceController::class, 'removeShowDevice']);
         });
     });
