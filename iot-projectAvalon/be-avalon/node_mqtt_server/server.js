@@ -426,5 +426,5 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`[INFO] Server berjalan di http://localhost:${PORT}`);
+    console.log(`[INFO] Server berjalan di https://arcadia-nodeserver-development.up.railway.app:${PORT}`);
 });
