@@ -11,6 +11,7 @@ const router = createRouter({
     {
       path: '/',
       component: LandingPageLayout,
+      redirect: '/beranda',
       children: [
         {
           path: 'beranda',
