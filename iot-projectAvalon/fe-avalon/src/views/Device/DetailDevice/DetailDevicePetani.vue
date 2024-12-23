@@ -80,10 +80,14 @@
                         @click="changePage(currentPage - 1)">
                         Prev
                     </button>
-                    <button v-for="page in totalPages" :key="page" class="btn btn-sm btn-base-200 text-primary"
-                        :class="{ 'btn-primary text-primary-content': page === currentPage }" @click="changePage(page)">
+
+                    <!-- Tombol Pagination -->
+                    <button v-for="page in visiblePages" :key="page"
+                        class="btn btn-sm px-3 py-2 text-primary border border-gray-300 rounded"
+                        :class="{ 'bg-primary text-white': page === currentPage }" @click="changePage(page)">
                         {{ page }}
                     </button>
+
                     <button class="btn btn-sm btn-neutral" :class="{ 'btn-disabled': currentPage === totalPages }"
                         @click="changePage(currentPage + 1)">
                         Next
@@ -129,10 +133,35 @@ const soilMoistureChartData = ref({ labels: [], datasets: [] });
 const currentPage = ref(1);
 const pageSize = 10;
 const totalPages = computed(() => Math.ceil(historyData.value.length / pageSize));
+
+// Fungsi untuk menghitung halaman yang terlihat
+const visiblePages = computed(() => {
+    const maxVisible = 10; // Jumlah maksimal tombol pagination yang terlihat
+    const total = totalPages.value;
+
+    if (total <= maxVisible) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const start = Math.max(currentPage.value - Math.floor(maxVisible / 2), 1);
+    const end = Math.min(start + maxVisible - 1, total);
+
+    const adjustedStart = Math.max(end - maxVisible + 1, 1); // Penyesuaian jika halaman terakhir melebihi total
+    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i);
+});
+
+// Data yang dipaginasi
 const paginatedHistoryData = computed(() => {
     const start = (currentPage.value - 1) * pageSize;
     return historyData.value.slice(start, start + pageSize);
 });
+
+// Fungsi untuk mengubah halaman
+const changePage = (page) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+    }
+};
 
 // Chart Options
 const chartOptions = {
@@ -273,11 +302,6 @@ const fetchHistoricalData = async () => {
 
 const navigateToUpdateForm = () => {
     router.push({ name: "updateDevice", params: { id: route.params.id } });
-};
-
-// Change Page
-const changePage = page => {
-    if (page >= 1 && page <= totalPages.value) currentPage.value = page;
 };
 
 onMounted(async () => {
