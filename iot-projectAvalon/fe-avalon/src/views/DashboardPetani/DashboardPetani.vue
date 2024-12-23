@@ -16,7 +16,43 @@
 
             <!-- Notification Section (1/4 Lebar) -->
             <div class="col-span-1 p-4 border border-neutral rounded-lg shadow-md">
-                <p>POKOKNYA DISINI ADA FITUR NOTIFIKASI</p>
+                <div>
+                    <h2 class="text-lg font-semibold mb-4">Notifikasi</h2>
+
+                    <!-- Loader -->
+                    <div v-if="isLoadingNotifikasi" class="flex justify-center">
+                        <span class="loading loading-spinner loading-md text-primary"></span>
+                    </div>
+
+                    <!-- Daftar Notifikasi -->
+                    <template v-else>
+                        <ul v-if="filteredNotifications.length > 0" class="space-y-4">
+                            <li v-for="notification in filteredNotifications" :key="notification.notifications_id"
+                                class="border-b border-gray-300 pb-2">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-base mb-4">{{ notification.title }}</p>
+                                        <p class="text-sm text-neutral mb-3">{{ notification.message }}</p>
+                                        <p class="text-xs text-neutral mb-4">{{ formatTimestamp(notification.created_at)
+                                            }}</p>
+                                    </div>
+
+                                    <div v-if="!notification.is_read" class="ml-4">
+                                        <button @click="markAsRead(notification.notifications_id)"
+                                            class="btn btn-md btn-primary text-primary-content">
+                                            Tandai Dibaca
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <!-- Pesan jika tidak ada notifikasi -->
+                        <div v-else class="text-center text-neutral">
+                            <p>Tidak ada notifikasi untuk ditampilkan saat ini.</p>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <!-- Loader atau Chart Section Dinamis -->
@@ -53,7 +89,7 @@
 
 <script setup>
 import customFetch from '@/utils/customFetch';
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useAuthStore } from '@/stores/Auth';
 
 import { Line } from "vue-chartjs";
@@ -100,6 +136,7 @@ const calendarApp = createCalendar({
 
 const AuthStore = useAuthStore();
 const isLoading = ref(true); // State untuk loader
+const isLoadingNotifikasi = ref(true); // State untuk loader
 const chartsData = ref({}); // Menyimpan data untuk setiap device
 const devicesInfo = ref([]); // Menyimpan informasi nama perangkat
 
@@ -187,7 +224,7 @@ const fetchData = async () => {
         const devices = response.data.data;
 
         // Filter hanya perangkat yang statusnya "Active"
-        const activeDevices = devices.filter(device => device.status === "Active");
+        const activeDevices = devices.filter(device => device.status === "Active" && device.device_type === "Monitoring Module");
 
         // Simpan informasi perangkat aktif
         devicesInfo.value = activeDevices.map(device => ({
@@ -249,11 +286,79 @@ const fetchData = async () => {
     }
 };
 
+const notifications = ref([]);
+
+// Fetch notifications from API
+const fetchNotifications = async () => {
+    try {
+        const response = await customFetch.get("/notification", {
+            headers: {
+                Authorization: `Bearer ${AuthStore.tokenUser}`,
+            },
+        });
+
+        notifications.value = response.data.data; // Asumsi notifikasi ada di response.data.data
+    } catch (error) {
+        console.error("Gagal mengambil notifikasi:", error);
+    } finally {
+        isLoadingNotifikasi.value = false; // Matikan loader
+    }
+};
+
+// Filter notifications based on logged-in user's ID and is_read status
+const filteredNotifications = computed(() =>
+    notifications.value
+        .filter(notification =>
+            notification.recipients.some(
+                recipient =>
+                    recipient.users_id === AuthStore.currentUser.id && !recipient.is_read
+            )
+        )
+        .slice(0, 3) // Ambil hanya 3 notifikasi pertama
+);
+
+// Fungsi untuk menandai notifikasi sebagai dibaca
+const markAsRead = async (notificationId) => {
+    try {
+        // Mengirim permintaan PUT ke backend dengan parameter is_read
+        await customFetch.put(`/notification/recipient/${notificationId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${AuthStore.tokenUser}`,
+                },
+            });
+
+        // Update status is_read di frontend
+        notifications.value = notifications.value.map((notification) =>
+            notification.notifications_id === notificationId
+                ? { ...notification, is_read: true } // Perbarui status is_read menjadi true
+                : notification
+        );
+
+        console.log(`Notifikasi dengan ID ${notificationId} telah ditandai sebagai dibaca.`);
+    } catch (error) {
+        console.error("Gagal menandai notifikasi sebagai dibaca:", error);
+    }
+};
+
+// Fungsi untuk format timestamp
+const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
 // Interval fetch
 let fetchInterval = null;
 
 onMounted(() => {
     fetchData(); // Initial fetch
+    fetchNotifications();
     fetchInterval = setInterval(fetchData, 10000); // Fetch every 10 seconds
 });
 

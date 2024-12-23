@@ -12,8 +12,8 @@ class WaterPumpLog extends Model
     use HasFactory, HasUuids;
 
     protected $primaryKey = 'water_pump_log_id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+
+    protected $table = 'water_pump_log';
 
     protected $fillable = [
         'devices_id',

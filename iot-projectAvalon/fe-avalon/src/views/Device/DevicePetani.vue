@@ -44,7 +44,7 @@
 
                     <!-- Detail Button -->
                     <button class="btn bg-neutral text-base-100 py-2 rounded hover:bg-primary w-full md:w-auto"
-                        @click="goToDetail(device.deviceId)">
+                        @click="goToDetail(device.deviceId, device.deviceType)">
                         Detail
                     </button>
                 </div>
@@ -112,7 +112,7 @@ const fetchDevices = async () => {
             deviceType: device.device_type || "Unknown Type",
             status: device.status || "Unknown Status",
         }));
-
+        
         // Tutup modal secara otomatis saat polling berjalan
         if (showModal.value) {
             showModal.value = false; // Modal ditutup otomatis
@@ -127,8 +127,14 @@ const fetchDevices = async () => {
 };
 
 // Fungsi navigasi ke detail perangkat
-const goToDetail = (deviceId) => {
-    router.push({ name: "DetailDevice", params: { id: deviceId } });
+const goToDetail = (deviceId, deviceType) => {
+    if (deviceType === "Monitoring Module") {
+        router.push({ name: "DetailDeviceMonitoring", params: { id: deviceId } });
+    } else if (deviceType === "Water Pump Module") {
+        router.push({ name: "DetailDeviceWatering", params: { id: deviceId } });
+    } else {
+        console.error("Device type tidak dikenal:", deviceType);
+    }
 };
 
 // Fungsi untuk memutuskan perangkat

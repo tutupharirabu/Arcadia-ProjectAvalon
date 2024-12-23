@@ -6,8 +6,10 @@ namespace App\Models;
 use Carbon\Carbon;
 use App\Models\Role;
 use App\Models\Otp_codes;
-use Illuminate\Notifications\Notifiable;
+use App\Models\Notification;
+use App\Models\NotificationRecipient;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -17,7 +19,8 @@ class User extends Authenticatable implements JWTSubject
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasUuids;
 
-    public static function boot() {
+    public static function boot()
+    {
         parent::boot();
 
         static::created(function ($model) {
@@ -25,7 +28,8 @@ class User extends Authenticatable implements JWTSubject
         });
     }
 
-    public function generateOtpCodeData($user) {
+    public function generateOtpCodeData($user)
+    {
         $randomNumber = mt_rand(100000, 999999);
         $now = Carbon::now();
 
@@ -93,5 +97,24 @@ class User extends Authenticatable implements JWTSubject
     public function otpCode()
     {
         return $this->hasOne(Otp_codes::class, 'users_id');
+    }
+
+    // Relasi ke notifikasi yang dikirim oleh pengguna
+    public function sentNotifications()
+    {
+        return $this->hasMany(Notification::class, 'sender_id', 'id');
+    }
+
+    // Relasi ke notifikasi yang diterima oleh pengguna
+    public function receivedNotifications()
+    {
+        return $this->hasManyThrough(
+            Notification::class,
+            NotificationRecipient::class,
+            'recipient_id', // Foreign key di notification_recipients
+            'notification_id', // Foreign key di notifications
+            'id', // Local key di users
+            'notification_id' // Local key di notification_recipients
+        );
     }
 }

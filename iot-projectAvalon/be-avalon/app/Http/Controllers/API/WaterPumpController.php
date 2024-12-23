@@ -71,4 +71,34 @@ class WaterPumpController extends Controller
             }
         }
     }
+
+    public function show($deviceId)
+    {
+        try {
+            // Ambil log berdasarkan devices_id
+            $logs = WaterPumpLog::where('devices_id', $deviceId)
+                ->orderBy('created_at', 'desc') // Urutkan berdasarkan waktu terbaru
+                ->get();
+
+            // Jika log kosong
+            if ($logs->isEmpty()) {
+                return response()->json([
+                    'message' => 'Tidak ada log pompa air untuk perangkat ini.',
+                    'data' => [],
+                ], 404);
+            }
+
+            // Respon sukses
+            return response()->json([
+                'message' => 'Log pompa air berhasil diambil.',
+                'data' => $logs,
+            ], 200);
+        } catch (\Exception $e) {
+            // Jika terjadi kesalahan
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat mengambil log pompa air.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

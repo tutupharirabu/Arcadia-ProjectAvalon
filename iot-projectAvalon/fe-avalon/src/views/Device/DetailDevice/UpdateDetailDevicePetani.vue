@@ -63,7 +63,7 @@
     </div>
 
     <!-- Modal -->
-    <<div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>

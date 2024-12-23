@@ -7,7 +7,9 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\WaterPumpController;
 use App\Http\Middleware\VerifyPasswordResetToken;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\HistoricalDataController;
+use App\Http\Controllers\API\NotificationRecipientController;
 
 Route::prefix('v1')->group(function () {
 
@@ -60,6 +62,19 @@ Route::prefix('v1')->group(function () {
     // Water Pump
     Route::prefix('water-pump')->middleware('auth:api')->group(function () {
         Route::post('/control', [WaterPumpController::class, 'controlPump']);
+        Route::get('/log/{id}', [WaterPumpController::class, 'show']);
+    });
+
+    // Notification
+    Route::prefix('notification')->middleware('auth:api')->group(function () {
+        Route::post('/', [NotificationController::class, 'store']);
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/{id}', [NotificationController::class, 'show']);
+
+        Route::prefix('recipient')->group(function () {
+            Route::get('/', [NotificationRecipientController::class, 'getNotificationsForRecipient']);
+            Route::put('/{id}', [NotificationRecipientController::class, 'markAsRead']);
+        });
     });
 
     // Historical Data
