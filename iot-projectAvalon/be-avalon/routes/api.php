@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\DeviceController;
+use App\Http\Controllers\API\WaterPumpController;
 use App\Http\Middleware\VerifyPasswordResetToken;
 use App\Http\Controllers\API\HistoricalDataController;
 
@@ -54,6 +55,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/link/{devices_id}', [DeviceController::class, 'linkDevice']);
             Route::delete('/unlink/{devices_id}', [DeviceController::class, 'removeShowDevice']);
         });
+    });
+
+    // Water Pump
+    Route::prefix('water-pump')->middleware('auth:api')->group(function () {
+        Route::post('/control', [WaterPumpController::class, 'controlPump']);
     });
 
     // Historical Data

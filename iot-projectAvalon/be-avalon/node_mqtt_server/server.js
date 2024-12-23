@@ -219,7 +219,9 @@ let currentDeviceType = null;
 let messageQueue = []; // Antrian untuk pesan MQTT
 let isProcessingQueue = false; // Flag untuk memproses pesan
 
-const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature", "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture"];
+const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature",
+    "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture",
+    "proto-one-watering-1.device-id", "proto-one-watering-1.device-type", "proto-one-watering-1.pump-control",];
 
 // Pemetaan nama feed ke properti buffer
 const bufferKeyMap = {
@@ -251,11 +253,13 @@ async function processQueue() {
 
             switch (feedType) {
                 case "proto-one-monitoring-1.device-id":
+                case "proto-one-watering-1.device-id":
                     currentDeviceId = payload;
                     console.log(`[GET] Device ID diterima: ${currentDeviceId}`);
                     break;
 
                 case "proto-one-monitoring-1.device-type":
+                case "proto-one-watering-1.device-type":
                     currentDeviceType = payload;
                     console.log(`[GET] Tipe perangkat diterima: ${currentDeviceType}`);
                     break;
@@ -264,20 +268,14 @@ async function processQueue() {
                 case "proto-one-monitoring-1.humidity":
                 case "proto-one-monitoring-1.soil-moisture":
                     if (currentDeviceId) {
-                        // Simpan data ke Redis
                         await saveToRedis(feedType, payload, currentDeviceId);
-                        console.log(`[POST] Data ${feedType} disimpan untuk Device ID ${currentDeviceId}`);
 
-                        // Tambahkan ke buffer
                         if (!dataBuffer[currentDeviceId]) {
                             dataBuffer[currentDeviceId] = { temperature: [], humidity: [], soil_moisture: [] };
                         }
 
                         const bufferKey = bufferKeyMap[feedType];
                         if (bufferKey) {
-                            if (!dataBuffer[currentDeviceId][bufferKey]) {
-                                dataBuffer[currentDeviceId][bufferKey] = []; // Inisialisasi jika belum ada
-                            }
                             dataBuffer[currentDeviceId][bufferKey].push(payload);
                             console.log(`[POST] Data ${bufferKey} diproses ke Buffer untuk Device ID ${currentDeviceId}: ${payload}`);
                         }
@@ -285,9 +283,16 @@ async function processQueue() {
                         console.log("[WARNING] Device ID belum tersedia. Data diabaikan.");
                     }
                     break;
+
+                case "proto-one-watering-1.pump-control":
+                    if (payload === "ON" || payload === "OFF") {
+                        console.log(`[ACTION] Kontrol Pompa Air: ${payload}`);
+                    } else {
+                        console.log(`[WARNING] Perintah pompa air tidak valid: ${payload}`);
+                    }
+                    break;
             }
 
-            // Jika Device ID dan Device Type tersedia, simpan perangkat
             if (currentDeviceId && currentDeviceType) {
                 await handleDevice(currentDeviceId, currentDeviceType);
             }
@@ -422,6 +427,26 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
             error: error.message,
         });
     }
+});
+
+// API untuk kontrol pompa
+app.post("/api/water-pump/control", (req, res) => {
+    const { device_id, action } = req.body;
+
+    if (!device_id || !["ON", "OFF"].includes(action)) {
+        return res.status(400).json({ error: "Invalid device_id or action." });
+    }
+
+    const payload = JSON.stringify({ device_id, action });
+    mqttClient.publish(`${process.env.MQTT_USERNAME}/feeds/proto-one-watering-1.pump-control`, payload, (err) => {
+        if (err) {
+            console.error("[ERROR] Gagal mengirim kontrol ke MQTT:", err);
+            return res.status(500).json({ error: "Failed to send pump control." });
+        }
+
+        console.log(`[INFO] Kontrol pompa berhasil dikirim: ${payload}`);
+        res.status(200).json({ message: "Pump control sent successfully." });
+    });
 });
 
 // Start server
