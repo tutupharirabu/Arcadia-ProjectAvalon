@@ -132,8 +132,6 @@ const fetchDevices = async () => {
             waterPumpData: device.water_pump_logs || null,
         }));
 
-        console.log("Devices:", devices.value);
-
         // Tutup modal secara otomatis saat polling berjalan
         if (showModal.value) {
             showModal.value = false; // Modal ditutup otomatis
