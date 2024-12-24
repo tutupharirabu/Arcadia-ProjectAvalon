@@ -313,7 +313,7 @@ const fetchData = async () => {
         for (const device of activeDevices) {
             try {
                 const detailResponse = await axios.get(
-                    `https://arcadia-nodeserver-development.up.railway.app/api/dashboard/${device.devices_id}`,
+                    `https://arcadia-nodeserver-monitoring-development.up.railway.app/api/dashboard/${device.devices_id}`,
                     { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
                 );
 
