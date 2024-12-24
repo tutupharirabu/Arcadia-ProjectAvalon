@@ -13,6 +13,7 @@
     "test:unit:dev": "cypress open --component"
   },
   "dependencies": {
+    "@schedule-x/events-service": "^2.12.1",
     "@schedule-x/theme-default": "^2.11.0",
     "@schedule-x/theme-shadcn": "^2.11.0",
     "@schedule-x/vue": "^2.9.0",

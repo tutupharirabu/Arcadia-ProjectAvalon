@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Device;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\NotificationRecipient;
 
 class DeviceController extends Controller
 {
@@ -20,7 +22,9 @@ class DeviceController extends Controller
         }
 
         // Cari perangkat yang terhubung dengan users_id
-        $devices = Device::where('users_id', $userId)->get();
+        $devices = Device::where('users_id', $userId)
+            ->with('waterPumpLogs') // Memuat relasi water_pump_log
+            ->get();
 
         // Jika tidak ada perangkat, kembalikan data kosong dengan status 200
         if ($devices->isEmpty()) {
@@ -156,16 +160,40 @@ class DeviceController extends Controller
             ], 400); // 400 Bad Request
         }
 
-        // Jika perangkat belum memiliki user_id, hubungkan dengan user_id pengguna yang sedang login
+        // Jika perangkat belum memiliki users_id, hubungkan dengan users_id pengguna yang sedang login
         $device->users_id = $userId;
         $device->status = "Active";
         $device->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Perangkat berhasil ditautkan.',
-            'data' => $device,
-        ], 200);
+        // Kirim notifikasi
+        try {
+            // Buat notifikasi
+            $notification = Notification::create([
+                'source' => 'device', // Sumber notifikasi dari perangkat
+                'title' => 'Perangkat Berhasil Ditautkan',
+                'message' => 'Perangkat dengan ID ' . $devices_id . ' berhasil ditautkan ke akun Anda.',
+                'type' => 'info',
+                'devices_id' => $devices_id, // Mengaitkan notifikasi dengan perangkat
+            ]);
+
+            // Tambahkan penerima notifikasi
+            NotificationRecipient::create([
+                'notifications_id' => $notification->notifications_id,
+                'users_id' => $userId, // Penerima adalah pengguna yang sedang login
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Perangkat berhasil ditautkan ke akun Anda dan notifikasi berhasil dikirim.',
+            ], 200);
+        } catch (\Exception $e) {
+            // Penanganan kesalahan
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat berhasil ditautkan, tetapi gagal mengirim notifikasi.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -261,10 +289,34 @@ class DeviceController extends Controller
         $device->status = 'Not Linked To User';
         $device->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Perangkat berhasil dihapus dari dashboard Anda.',
-            'data' => $device,
-        ], 200);
+        // Kirim notifikasi
+        try {
+            // Buat notifikasi
+            $notification = Notification::create([
+                'source' => 'device', // Sumber notifikasi dari perangkat
+                'title' => 'Perangkat Diputuskan dari Dashboard',
+                'message' => 'Perangkat dengan ID ' . $devices_id . ' telah dihapus dari dashboard Anda.',
+                'type' => 'info',
+                'devices_id' => $devices_id,
+            ]);
+
+            // Tambahkan penerima
+            NotificationRecipient::create([
+                'notifications_id' => $notification->notifications_id,
+                'users_id' => $userId, // Penerima adalah pengguna yang dihapuskan perangkatnya
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Perangkat berhasil dihapus dari dashboard Anda dan notifikasi berhasil dikirim.',
+                'data' => $device,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat berhasil dihapus dari dashboard Anda, tetapi gagal mengirim notifikasi.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

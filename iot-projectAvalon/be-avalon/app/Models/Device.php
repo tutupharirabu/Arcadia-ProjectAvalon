@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Notification;
+use App\Models\WaterPumpLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Device extends Model
 {
@@ -61,5 +63,21 @@ class Device extends Model
     public function historicalData()
     {
         return $this->hasMany(HistoricalData::class, 'devices_id', 'devices_id');
+    }
+
+    /**
+     * Relasi ke model WaterPumpLog
+     */
+    public function waterPumpLogs()
+    {
+        return $this->hasMany(WaterPumpLog::class, 'devices_id', 'devices_id');
+    }
+
+    /**
+     * Relasi ke tabel notifications (notifikasi yang dikirim oleh perangkat ini).
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'devices_id', 'devices_id');
     }
 }

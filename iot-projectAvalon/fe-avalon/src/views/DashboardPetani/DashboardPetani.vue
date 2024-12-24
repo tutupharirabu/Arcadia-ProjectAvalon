@@ -10,13 +10,55 @@
             </div>
 
             <!-- Calendar Section (3/4 Lebar) -->
-            <div class="col-span-3 rounded-lg shadow-md">
-                <ScheduleXCalendar :calendar-app="calendarApp" />
+            <div class="col-span-3 rounded-lg shadow-md border">
+                <div v-if="isEventLoading" class="flex justify-center items-center py-20">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="ml-4 text-neutral">Memuat data kalender...</p>
+                </div>
+                <div v-else>
+                    <ScheduleXCalendar :calendar-app="calendarApp" />
+                </div>
             </div>
 
             <!-- Notification Section (1/4 Lebar) -->
             <div class="col-span-1 p-4 border border-neutral rounded-lg shadow-md">
-                <p>POKOKNYA DISINI ADA FITUR NOTIFIKASI</p>
+                <div>
+                    <h2 class="text-lg font-semibold mb-4">Notifikasi</h2>
+
+                    <!-- Loader -->
+                    <div v-if="isLoadingNotifikasi" class="flex justify-center">
+                        <span class="loading loading-spinner loading-md text-primary"></span>
+                    </div>
+
+                    <!-- Daftar Notifikasi -->
+                    <template v-else>
+                        <ul v-if="filteredNotifications.length > 0" class="space-y-4">
+                            <li v-for="notification in filteredNotifications" :key="notification.notifications_id"
+                                class="border-b border-gray-300 pb-2">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-base mb-4">{{ notification.title }}</p>
+                                        <p class="text-sm text-neutral mb-3">{{ notification.message }}</p>
+                                        <p class="text-xs text-neutral mb-4">{{ formatTimestamp(notification.created_at)
+                                            }}</p>
+                                    </div>
+
+                                    <div v-if="!notification.is_read" class="ml-4">
+                                        <button @click="markAsRead(notification.notifications_id)"
+                                            class="btn btn-md btn-primary text-primary-content">
+                                            Tandai Dibaca
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <!-- Pesan jika tidak ada notifikasi -->
+                        <div v-else class="text-center text-neutral">
+                            <p>Tidak ada notifikasi untuk ditampilkan saat ini.</p>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <!-- Loader atau Chart Section Dinamis -->
@@ -53,7 +95,7 @@
 
 <script setup>
 import customFetch from '@/utils/customFetch';
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useAuthStore } from '@/stores/Auth';
 import axios from "axios";
 
@@ -78,29 +120,98 @@ import {
     createCalendar,
     createViewMonthGrid,
 } from "@schedule-x/calendar";
+import { createEventsServicePlugin } from '@schedule-x/events-service'
+
+const eventsServicePlugin = createEventsServicePlugin();
 
 const calendarApp = createCalendar({
     selectedDate: new Date().toISOString().split("T")[0],
     views: [createViewMonthGrid()],
-    events: [
-        {
-            id: 1,
-            title: 'Event 1',
-            start: '2024-12-19',
-            end: '2024-12-19',
-        },
-        {
-            id: 2,
-            title: 'Event 2',
-            start: '2024-12-20',
-            end: '2024-12-20',
-        },
-    ],
     theme: 'shadcn',
-});
+},
+    [eventsServicePlugin]
+);
+
+const waterPumpDevices = ref([]);
+const pumpLogData = ref([]);
+const isEventLoading = ref(false);
+
+const fetchPumpLogData = async () => {
+    try {
+        if (!waterPumpDevices.value || waterPumpDevices.value.length === 0) {
+            console.warn("No water pump devices available.");
+            pumpLogData.value = [];
+            return;
+        }
+
+        const allLogs = [];
+
+        for (const device of waterPumpDevices.value) {
+            try {
+                const response = await customFetch.get(`/water-pump/log/${device.devices_id}`, {
+                    headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
+                });
+
+                const deviceLogs = response?.data?.data || [];
+                allLogs.push(
+                    ...deviceLogs.map(log => ({
+                        ...log,
+                        deviceName: device.name || `Device ${device.id}`,
+                    }))
+                );
+            } catch (error) {
+                console.error(`Error fetching logs for device ${device.id}:`, error);
+            }
+        }
+
+        pumpLogData.value = allLogs; // Simpan data log di state
+        console.log("All pump log data fetched successfully:", pumpLogData.value);
+    } catch (error) {
+        pumpLogData.value = [];
+        console.error("Error fetching water pump log data:", error);
+    }
+};
+
+const initializeEvent = async () => {
+    try {
+        // Aktifkan loader sebelum proses
+        isEventLoading.value = true;
+        console.log("Initializing events...");
+
+        // Periksa apakah pumpLogData adalah array
+        if (!Array.isArray(pumpLogData.value) || pumpLogData.value.length === 0) {
+            console.warn("pumpLogData is not an array or is empty.");
+            return;
+        }
+
+        // Format data log menjadi event
+        const formattedEvents = pumpLogData.value.map((log, index) => {
+            const formatTime = (datetime) => datetime?.slice(0, 16); // Ambil hingga menit (YYYY-MM-DD HH:mm)
+            return {
+                id: index + 1, // ID unik
+                title: `Pompa Air Menyala - ${log.deviceName || log.devices_id}`, // Judul log
+                start: formatTime(log.start_time), // Waktu mulai
+                end: formatTime(log.end_time) || formatTime(log.start_time), // Waktu selesai
+            };
+        });
+
+        // Tambahkan semua event ke EventsService
+        formattedEvents.forEach((event) => {
+            eventsServicePlugin.add(event);
+        });
+
+        console.log("Events added to EventsService:", formattedEvents);
+    } catch (error) {
+        console.error("Error initializing events for EventsService:", error);
+    } finally {
+        // Nonaktifkan loader setelah selesai
+        isEventLoading.value = false;
+    }
+};
 
 const AuthStore = useAuthStore();
 const isLoading = ref(true); // State untuk loader
+const isLoadingNotifikasi = ref(true); // State untuk loader
 const chartsData = ref({}); // Menyimpan data untuk setiap device
 const devicesInfo = ref([]); // Menyimpan informasi nama perangkat
 
@@ -187,8 +298,10 @@ const fetchData = async () => {
 
         const devices = response.data.data;
 
+        waterPumpDevices.value = devices.filter(device => device.device_type === "Water Pump Module");
+
         // Filter hanya perangkat yang statusnya "Active"
-        const activeDevices = devices.filter(device => device.status === "Active");
+        const activeDevices = devices.filter(device => device.status === "Active" && device.device_type === "Monitoring Module");
 
         // Simpan informasi perangkat aktif
         devicesInfo.value = activeDevices.map(device => ({
@@ -250,17 +363,117 @@ const fetchData = async () => {
     }
 };
 
+const notifications = ref([]);
+
+// Fetch notifications from API
+const fetchNotifications = async () => {
+    if (isFetching) return;
+
+    isFetching = true;
+    try {
+        const response = await customFetch.get("/notification", {
+            headers: {
+                Authorization: `Bearer ${AuthStore.tokenUser}`,
+            },
+        });
+
+        notifications.value = response.data.data; // Asumsi notifikasi ada di response.data.data
+    } catch (error) {
+        console.error("Gagal mengambil notifikasi:", error);
+    } finally {
+        isFetching = false;
+        isLoadingNotifikasi.value = false; // Matikan loader
+    }
+};
+
+// Filter notifications based on logged-in user's ID and is_read status
+const filteredNotifications = computed(() =>
+    notifications.value
+        .filter(notification =>
+            notification.recipients.some(
+                recipient =>
+                    recipient.users_id === AuthStore.currentUser.id && !recipient.is_read
+            )
+        )
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // Urutkan berdasarkan created_at terbaru
+        .slice(0, 3) // Ambil hanya 3 notifikasi pertama
+);
+
+// Fungsi untuk menandai notifikasi sebagai dibaca
+const markAsRead = async (notificationId) => {
+    try {
+        // Mengirim permintaan PUT ke backend dengan parameter is_read
+        await customFetch.put(`/notification/recipient/${notificationId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${AuthStore.tokenUser}`,
+                },
+            });
+
+        // Update status is_read di frontend
+        notifications.value = notifications.value.map((notification) =>
+            notification.notifications_id === notificationId
+                ? { ...notification, is_read: true } // Perbarui status is_read menjadi true
+                : notification
+        );
+
+        console.log(`Notifikasi dengan ID ${notificationId} telah ditandai sebagai dibaca.`);
+    } catch (error) {
+        console.error("Gagal menandai notifikasi sebagai dibaca:", error);
+    }
+};
+
+// Fungsi untuk format timestamp
+const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
 // Interval fetch
 let fetchInterval = null;
 
-onMounted(() => {
-    fetchData(); // Initial fetch
-    fetchInterval = setInterval(fetchData, 10000); // Fetch every 10 seconds
+onMounted(async () => {
+    try {
+        isLoading.value = true; // Aktifkan loader
+
+        // Fetch perangkat terlebih dahulu
+        await fetchData();
+
+        // Fetch notifikasi pertama kali
+        await fetchNotifications();
+
+        // Fetch log pompa air setelah perangkat tersedia
+        await fetchPumpLogData();
+
+        // Inisialisasi event setelah log tersedia
+        await initializeEvent();
+
+        // Interval untuk fetch data dan notifikasi setiap 10 detik
+        fetchInterval = setInterval(async () => {
+            try {
+                console.log("Polling data...");
+                await fetchData(); // Fetch perangkat
+                await fetchNotifications(); // Fetch notifikasi
+            } catch (error) {
+                console.error("Error during polling:", error);
+            }
+        }, 10000); // Interval 10 detik
+    } catch (error) {
+        console.error("Error in onMounted:", error);
+    } finally {
+        isLoading.value = false; // Nonaktifkan loader
+    }
 });
 
 onBeforeUnmount(() => {
     if (fetchInterval) {
-        clearInterval(fetchInterval);
+        clearInterval(fetchInterval); // Hentikan interval saat komponen di-unmount
     }
 });
 </script>

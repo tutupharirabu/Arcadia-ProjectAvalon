@@ -5,8 +5,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\DeviceController;
+use App\Http\Controllers\API\WaterPumpController;
 use App\Http\Middleware\VerifyPasswordResetToken;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\HistoricalDataController;
+use App\Http\Controllers\API\NotificationRecipientController;
 
 Route::prefix('v1')->group(function () {
 
@@ -53,6 +56,25 @@ Route::prefix('v1')->group(function () {
 
             Route::post('/link/{devices_id}', [DeviceController::class, 'linkDevice']);
             Route::delete('/unlink/{devices_id}', [DeviceController::class, 'removeShowDevice']);
+        });
+    });
+
+    // Water Pump
+    Route::prefix('water-pump')->middleware('auth:api')->group(function () {
+        Route::post('/control', [WaterPumpController::class, 'controlPump']);
+        Route::get('/log/{id}', [WaterPumpController::class, 'show']);
+        Route::put('/log/{logId}', [WaterPumpController::class, 'showWaterPumpLog']);
+    });
+
+    // Notification
+    Route::prefix('notification')->middleware('auth:api')->group(function () {
+        Route::post('/', [NotificationController::class, 'store']);
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/{id}', [NotificationController::class, 'show']);
+
+        Route::prefix('recipient')->group(function () {
+            Route::get('/', [NotificationRecipientController::class, 'getNotificationsForRecipient']);
+            Route::put('/{id}', [NotificationRecipientController::class, 'markAsRead']);
         });
     });
 

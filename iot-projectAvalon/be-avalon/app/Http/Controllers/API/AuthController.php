@@ -146,7 +146,7 @@ class AuthController extends Controller
 
         // Kirim token ke Node.js
         try {
-            $nodeResponse = Http::post(env('NODE_API_URL') . '/api/store-token', [
+            $nodeResponse = Http::post(env('NODE_API_URL_1') . '/api/store-token', [
                 'token' => $token,
                 'users_id' => $user->users_id, // Tambahkan users_id
             ]);

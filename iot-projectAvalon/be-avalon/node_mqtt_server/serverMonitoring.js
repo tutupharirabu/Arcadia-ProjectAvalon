@@ -15,7 +15,7 @@ const authenticateToken = require("./middleware/authMiddleware");
 
 // Inisialisasi aplikasi Express
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT_MONITOR || 3000;
 
 // Middleware
 app.use(bodyParser.json());
@@ -219,7 +219,8 @@ let currentDeviceType = null;
 let messageQueue = []; // Antrian untuk pesan MQTT
 let isProcessingQueue = false; // Flag untuk memproses pesan
 
-const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature", "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture"];
+const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature",
+    "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture",];
 
 // Pemetaan nama feed ke properti buffer
 const bufferKeyMap = {
@@ -264,20 +265,14 @@ async function processQueue() {
                 case "proto-one-monitoring-1.humidity":
                 case "proto-one-monitoring-1.soil-moisture":
                     if (currentDeviceId) {
-                        // Simpan data ke Redis
                         await saveToRedis(feedType, payload, currentDeviceId);
-                        console.log(`[POST] Data ${feedType} disimpan untuk Device ID ${currentDeviceId}`);
 
-                        // Tambahkan ke buffer
                         if (!dataBuffer[currentDeviceId]) {
                             dataBuffer[currentDeviceId] = { temperature: [], humidity: [], soil_moisture: [] };
                         }
 
                         const bufferKey = bufferKeyMap[feedType];
                         if (bufferKey) {
-                            if (!dataBuffer[currentDeviceId][bufferKey]) {
-                                dataBuffer[currentDeviceId][bufferKey] = []; // Inisialisasi jika belum ada
-                            }
                             dataBuffer[currentDeviceId][bufferKey].push(payload);
                             console.log(`[POST] Data ${bufferKey} diproses ke Buffer untuk Device ID ${currentDeviceId}: ${payload}`);
                         }
@@ -287,7 +282,6 @@ async function processQueue() {
                     break;
             }
 
-            // Jika Device ID dan Device Type tersedia, simpan perangkat
             if (currentDeviceId && currentDeviceType) {
                 await handleDevice(currentDeviceId, currentDeviceType);
             }
