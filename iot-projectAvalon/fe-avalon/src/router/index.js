@@ -53,12 +53,12 @@ const router = createRouter({
           component: () => import('../views/Device/DevicePetani.vue'),
         },
         {
-          path: 'device/:id',
+          path: 'device/monitoring/:id',
           name: 'DetailDeviceMonitoring',
           component: () => import('../views/Device/DetailDevice/DetailDeviceMonitoringPetani.vue'),
         },
         {
-          path: 'device/:id',
+          path: 'device/watering/:id',
           name: 'DetailDeviceWatering',
           component: () => import('../views/Device/DetailDevice/DetailDeviceWateringPetani.vue'),
         },

@@ -69,11 +69,11 @@
             <p>{{ modalMessage }}</p>
             <button @click="handleOk" class="btn btn-primary mt-4">OK</button>
         </div>
-        </div>
+    </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
@@ -96,13 +96,21 @@ const formData = ref({
     description: "",
 });
 
+const deviceType = ref("");
+
 // Fungsi untuk menangani tombol OK
 const handleOk = () => {
     // Hapus timeout jika tombol OK ditekan
     if (timeoutId) {
         clearTimeout(timeoutId);
     }
-    router.push({ name: "DetailDevice", params: { id: route.params.id } });
+
+    // Periksa device_type untuk menentukan halaman tujuan
+    if (deviceType.value === "Water Pump Module") {
+        router.push({ name: 'DetailDeviceWatering', params: { id: route.params.id } });
+    } else {
+        router.push({ name: 'DetailDeviceMonitoring', params: { id: route.params.id } });
+    }
 };
 
 // Ambil Detail Alat
@@ -120,6 +128,9 @@ const fetchDeviceDetail = async () => {
             location: data.location || "",
             description: data.description || "",
         };
+
+        deviceType.value = data.device_type;
+
     } catch (error) {
         console.error("Error fetching device data:", error);
         modalTitle.value = "Error";
@@ -158,7 +169,15 @@ const submitForm = async () => {
 
         // Set timeout untuk otomatis redirect setelah 5 detik
         timeoutId = setTimeout(() => {
-            router.push({ name: "DetailDevice", params: { id: route.params.id } });
+            if (deviceType.value === "Water Pump Module") {
+                router.push({ name: "DetailDeviceWatering", params: { id: route.params.id } });
+            } else if (deviceType === "Monitoring Module") {
+                router.push({ name: "DetailDeviceMonitoring", params: { id: route.params.id } });
+            } else {
+                // Rute fallback jika device_type tidak dikenali
+                console.warn("Device type tidak dikenali. Mengarahkan ke rute default.");
+                router.push({ name: "DashboardPetani" }); // Rute default, bisa disesuaikan
+            }
         }, 5000);
     } catch (error) {
         console.error("Error updating device data:", error);
@@ -190,8 +209,11 @@ const fetchCurrentLocation = () => {
     }
 };
 
-// Inisialisasi
-fetchDeviceDetail();
+// Panggil fetchDeviceDetail pada mounted untuk memastikan deviceType diperbarui
+onMounted(async () => {
+    isLoading.value = true;
+    await fetchDeviceDetail();
+});
 </script>
 
 <style scoped>
