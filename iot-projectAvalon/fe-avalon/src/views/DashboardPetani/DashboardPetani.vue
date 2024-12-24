@@ -5,9 +5,9 @@
         <div class="grid grid-cols-4 gap-4 w-full">
 
             <!-- Weather App Section (Full Row) -->
-            <div class="col-span-4 p-4 border border-neutral rounded-lg shadow-md">
+            <!-- <div class="col-span-4 p-4 border border-neutral rounded-lg shadow-md">
                 <p>POKOKNYA DISINI ADA WEATHER APP</p>
-            </div>
+            </div> -->
 
             <!-- Calendar Section (3/4 Lebar) -->
             <div class="col-span-3 rounded-lg shadow-md border">
