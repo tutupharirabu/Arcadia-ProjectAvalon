@@ -16,8 +16,8 @@ return new class extends Migration
             $table->uuid('devices_id');
             $table->foreign('devices_id')->references('devices_id')->on('devices');
             $table->datetime('start_time');
-            $table->datetime('end_time');
-            $table->integer('duration');
+            $table->datetime('end_time')->nullable();
+            $table->integer('duration')->nullable();
             $table->timestamps();
         });
     }

@@ -219,7 +219,10 @@ mqttClient.on("reconnect", () => {
 app.post("/api/water-pump/control", (req, res) => {
     const { device_id, action } = req.body;
 
+    console.log("[INFO] Request diterima:", { device_id, action });
+
     if (!device_id || !["ON", "OFF"].includes(action)) {
+        console.error("[ERROR] Invalid device_id or action:", { device_id, action });
         return res.status(400).json({ error: "Invalid device_id or action." });
     }
 

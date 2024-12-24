@@ -10,8 +10,14 @@
             </div>
 
             <!-- Calendar Section (3/4 Lebar) -->
-            <div class="col-span-3 rounded-lg shadow-md">
-                <ScheduleXCalendar :calendar-app="calendarApp" />
+            <div class="col-span-3 rounded-lg shadow-md border">
+                <div v-if="isEventLoading" class="flex justify-center items-center py-20">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="ml-4 text-neutral">Memuat data kalender...</p>
+                </div>
+                <div v-else>
+                    <ScheduleXCalendar :calendar-app="calendarApp" />
+                </div>
             </div>
 
             <!-- Notification Section (1/4 Lebar) -->
@@ -113,26 +119,94 @@ import {
     createCalendar,
     createViewMonthGrid,
 } from "@schedule-x/calendar";
+import { createEventsServicePlugin } from '@schedule-x/events-service'
+
+const eventsServicePlugin = createEventsServicePlugin();
 
 const calendarApp = createCalendar({
     selectedDate: new Date().toISOString().split("T")[0],
     views: [createViewMonthGrid()],
-    events: [
-        {
-            id: 1,
-            title: 'Event 1',
-            start: '2024-12-19',
-            end: '2024-12-19',
-        },
-        {
-            id: 2,
-            title: 'Event 2',
-            start: '2024-12-20',
-            end: '2024-12-20',
-        },
-    ],
     theme: 'shadcn',
-});
+},
+    [eventsServicePlugin]
+);
+
+const waterPumpDevices = ref([]);
+const pumpLogData = ref([]);
+const isEventLoading = ref(false);
+
+const fetchPumpLogData = async () => {
+    try {
+        if (!waterPumpDevices.value || waterPumpDevices.value.length === 0) {
+            console.warn("No water pump devices available.");
+            pumpLogData.value = [];
+            return;
+        }
+
+        const allLogs = [];
+
+        for (const device of waterPumpDevices.value) {
+            try {
+                const response = await customFetch.get(`/water-pump/log/${device.devices_id}`, {
+                    headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
+                });
+
+                const deviceLogs = response?.data?.data || [];
+                allLogs.push(
+                    ...deviceLogs.map(log => ({
+                        ...log,
+                        deviceName: device.name || `Device ${device.id}`,
+                    }))
+                );
+            } catch (error) {
+                console.error(`Error fetching logs for device ${device.id}:`, error);
+            }
+        }
+
+        pumpLogData.value = allLogs; // Simpan data log di state
+        console.log("All pump log data fetched successfully:", pumpLogData.value);
+    } catch (error) {
+        pumpLogData.value = [];
+        console.error("Error fetching water pump log data:", error);
+    }
+};
+
+const initializeEvent = async () => {
+    try {
+        // Aktifkan loader sebelum proses
+        isEventLoading.value = true;
+        console.log("Initializing events...");
+
+        // Periksa apakah pumpLogData adalah array
+        if (!Array.isArray(pumpLogData.value) || pumpLogData.value.length === 0) {
+            console.warn("pumpLogData is not an array or is empty.");
+            return;
+        }
+
+        // Format data log menjadi event
+        const formattedEvents = pumpLogData.value.map((log, index) => {
+            const formatTime = (datetime) => datetime?.slice(0, 16); // Ambil hingga menit (YYYY-MM-DD HH:mm)
+            return {
+                id: index + 1, // ID unik
+                title: `Pompa Air Menyala - ${log.deviceName || log.devices_id}`, // Judul log
+                start: formatTime(log.start_time), // Waktu mulai
+                end: formatTime(log.end_time) || formatTime(log.start_time), // Waktu selesai
+            };
+        });
+
+        // Tambahkan semua event ke EventsService
+        formattedEvents.forEach((event) => {
+            eventsServicePlugin.add(event);
+        });
+
+        console.log("Events added to EventsService:", formattedEvents);
+    } catch (error) {
+        console.error("Error initializing events for EventsService:", error);
+    } finally {
+        // Nonaktifkan loader setelah selesai
+        isEventLoading.value = false;
+    }
+};
 
 const AuthStore = useAuthStore();
 const isLoading = ref(true); // State untuk loader
@@ -223,6 +297,8 @@ const fetchData = async () => {
 
         const devices = response.data.data;
 
+        waterPumpDevices.value = devices.filter(device => device.device_type === "Water Pump Module");
+
         // Filter hanya perangkat yang statusnya "Active"
         const activeDevices = devices.filter(device => device.status === "Active" && device.device_type === "Monitoring Module");
 
@@ -301,6 +377,7 @@ const fetchNotifications = async () => {
     } catch (error) {
         console.error("Gagal mengambil notifikasi:", error);
     } finally {
+        isFetching = false;
         isLoadingNotifikasi.value = false; // Matikan loader
     }
 };
@@ -314,6 +391,7 @@ const filteredNotifications = computed(() =>
                     recipient.users_id === AuthStore.currentUser.id && !recipient.is_read
             )
         )
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // Urutkan berdasarkan created_at terbaru
         .slice(0, 3) // Ambil hanya 3 notifikasi pertama
 );
 
@@ -356,10 +434,29 @@ const formatTimestamp = (timestamp) => {
 // Interval fetch
 let fetchInterval = null;
 
-onMounted(() => {
-    fetchData(); // Initial fetch
-    fetchNotifications();
-    fetchInterval = setInterval(fetchData, 10000); // Fetch every 10 seconds
+onMounted(async () => {
+    try {
+        isLoading.value = true; // Set loader aktif
+
+        // Fetch perangkat terlebih dahulu
+        await fetchData();
+
+        // Fetch notifikasi
+        fetchNotifications();
+
+        // Fetch log pompa air setelah perangkat tersedia
+        await fetchPumpLogData();
+
+        // Inisialisasi event setelah log tersedia
+        await initializeEvent();
+
+        // Interval untuk fetch data
+        fetchInterval = setInterval(fetchData, 10000); // Fetch every 10 seconds
+    } catch (error) {
+        console.error("Error in onMounted:", error);
+    } finally {
+        isLoading.value = false; // Matikan loader setelah selesai
+    }
 });
 
 onBeforeUnmount(() => {

@@ -157,10 +157,16 @@ const formatTimestamp = (timestamp) => {
 };
 
 onMounted(async () => {
-    await fetchDeviceDetail();
-    await fetchPumpLogData();
+    isLoading.value = true; // Set loader aktif saat halaman dimuat
+    await fetchDeviceDetail(); // Hanya panggil sekali saat halaman dimuat
+    await fetchPumpLogData(); // Jalankan polling hanya untuk log pompa air
     pollingInterval = setInterval(fetchPumpLogData, 10000); // Fetch data setiap 10 detik
 });
 
-onUnmounted(() => clearInterval(pollingInterval));
+onUnmounted(() => {
+    if (pollingInterval) {
+        clearInterval(pollingInterval); // Hentikan polling
+        pollingInterval = null; // Pastikan nilai pollingInterval direset
+    }
+});
 </script>

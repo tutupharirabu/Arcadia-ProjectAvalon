@@ -22,6 +22,15 @@
 
                 <!-- Kontrol Perangkat -->
                 <div class="flex flex-wrap items-center justify-end space-x-2 space-y-2 md:space-y-0">
+                    <!-- Button Penyiraman untuk Water Pump Module -->
+                    <button v-if="device.deviceType === 'Water Pump Module'"
+                        class="btn bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 w-full md:w-auto"
+                        :disabled="loadingPumpControl[device.deviceId]" @click="togglePump(device.deviceId)">
+                        <span v-if="loadingPumpControl[device.deviceId]" class="loading loading-spinner"></span>
+                        <span v-else>{{ pumpStatus[device.deviceId] === 'ON' ? 'Matikan Pompa' : 'Nyalakan Pompa'
+                            }}</span>
+                    </button>
+
                     <!-- Button Aktif/Nonaktif -->
                     <button :class="[
                         'btn px-4 py-2 rounded-md font-semibold text-white',
@@ -31,7 +40,7 @@
                         @click="toggleDevice(device.deviceId, device.status === 'Active' ? 'Inactive' : 'Active')">
                         <span v-if="loadingStatus[device.deviceId]" class="loading loading-spinner"></span>
                         <span v-else>
-                            {{ device.status === 'Active' ? 'Nonaktifkan' : 'Aktifkan' }}
+                            {{ device.status === 'Active' ? 'Nonaktifkan Alat' : 'Aktifkan Alat' }}
                         </span>
                     </button>
 
@@ -39,7 +48,7 @@
                     <button class="btn bg-red-500 text-primary-content py-2 rounded hover:bg-red-600 w-full md:w-auto"
                         :disabled="loadingUnlink[device.deviceId]" @click="unlinkDevice(device.deviceId)">
                         <span v-if="loadingUnlink[device.deviceId]" class="loading loading-spinner"></span>
-                        <span v-else>Unlink</span>
+                        <span v-else>Putuskan Alat</span>
                     </button>
 
                     <!-- Detail Button -->
@@ -96,6 +105,10 @@ const modalMessage = ref("");
 // Polling interval state
 let pollingInterval = null;
 
+// Pompa Air state
+const loadingPumpControl = ref({}); // Loader untuk tombol penyiraman
+const pumpStatus = ref({}); // Status ON/OFF pompa air
+
 // Fetch daftar perangkat
 const fetchDevices = async () => {
     try {
@@ -112,7 +125,7 @@ const fetchDevices = async () => {
             deviceType: device.device_type || "Unknown Type",
             status: device.status || "Unknown Status",
         }));
-        
+
         // Tutup modal secara otomatis saat polling berjalan
         if (showModal.value) {
             showModal.value = false; // Modal ditutup otomatis
@@ -189,6 +202,45 @@ const toggleDevice = async (deviceId, newStatus) => {
         showModal.value = true;
     } finally {
         loadingStatus.value[deviceId] = false; // Nonaktifkan loader
+    }
+};
+
+// Fungsi untuk mengontrol pompa air
+const togglePump = async (deviceId) => {
+    const currentStatus = pumpStatus.value[deviceId] || "OFF";
+    const newAction = currentStatus === "ON" ? "OFF" : "ON";
+
+    loadingPumpControl.value[deviceId] = true; // Aktifkan loader
+
+    try {
+        // Kirim permintaan ke API penyiraman
+        const response = await customFetch.post(
+            "/water-pump/control",
+            {
+                device_id: deviceId,
+                action: newAction,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${AuthStore.tokenUser}`,
+                },
+            }
+        );
+
+        // Jika berhasil, perbarui status pompa
+        if (response.status === 200) {
+            pumpStatus.value[deviceId] = newAction;
+            modalTitle.value = "Berhasil";
+            modalMessage.value = `Pompa berhasil ${newAction === "ON" ? "dinyalakan" : "dimatikan"}.`;
+            showModal.value = true;
+        }
+    } catch (error) {
+        console.error("Error controlling pump:", error);
+        modalTitle.value = "Error";
+        modalMessage.value = "Gagal mengontrol pompa. Silakan coba lagi.";
+        showModal.value = true;
+    } finally {
+        loadingPumpControl.value[deviceId] = false; // Nonaktifkan loader
     }
 };
 

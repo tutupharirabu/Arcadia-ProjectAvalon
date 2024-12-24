@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\WaterPumpLog;
+use Log;
 use Carbon\Carbon;
+use App\Models\WaterPumpLog;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
@@ -22,8 +23,7 @@ class WaterPumpController extends Controller
         $action = $validated['action'];
 
         // Kirimkan perintah ke Node.js
-        $nodeServerUrl = env('NODE_API_URL') . '/api/water-pump/control';
-        $response = Http::post($nodeServerUrl, [
+        $response = Http::post(env('NODE_API_URL_2') . '/api/water-pump/control', [
             'device_id' => $deviceId,
             'action' => $action,
         ]);
@@ -45,15 +45,23 @@ class WaterPumpController extends Controller
                 'log' => $log,
             ]);
         } elseif ($action === 'OFF') {
-            // Perbarui log saat pompa dimatikan
+            // Validasi input tambahan untuk log ID
+            $validated = $request->validate([
+                'water_pump_log_id' => 'required|uuid',
+            ]);
+
+            $logId = $validated['water_pump_log_id'];
+
+            // Perbarui log berdasarkan log ID
             $log = WaterPumpLog::where('devices_id', $deviceId)
-                ->whereNull('end_time') // Cari log yang belum memiliki end_time
-                ->latest('start_time')  // Ambil log terbaru berdasarkan waktu mulai
+                ->where('water_pump_log_id', $logId) // Gunakan log ID untuk memastikan log yang tepat
+                ->whereNull('end_time') // Pastikan log belum selesai
                 ->first();
 
             if ($log) {
                 $endTime = Carbon::now();
-                $duration = $log->start_time->diffInSeconds($endTime); // Hitung durasi dalam detik
+                $startTime = Carbon::parse($log->start_time); // Pastikan start_time diubah ke Carbon
+                $duration = $startTime->diffInSeconds($endTime); // Hitung durasi dalam detik
 
                 $log->update([
                     'end_time' => $endTime,
