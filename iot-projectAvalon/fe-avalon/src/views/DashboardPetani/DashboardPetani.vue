@@ -366,6 +366,9 @@ const notifications = ref([]);
 
 // Fetch notifications from API
 const fetchNotifications = async () => {
+    if (isFetching) return;
+
+    isFetching = true;
     try {
         const response = await customFetch.get("/notification", {
             headers: {
@@ -436,13 +439,13 @@ let fetchInterval = null;
 
 onMounted(async () => {
     try {
-        isLoading.value = true; // Set loader aktif
+        isLoading.value = true; // Aktifkan loader
 
         // Fetch perangkat terlebih dahulu
         await fetchData();
 
-        // Fetch notifikasi
-        fetchNotifications();
+        // Fetch notifikasi pertama kali
+        await fetchNotifications();
 
         // Fetch log pompa air setelah perangkat tersedia
         await fetchPumpLogData();
@@ -450,18 +453,26 @@ onMounted(async () => {
         // Inisialisasi event setelah log tersedia
         await initializeEvent();
 
-        // Interval untuk fetch data
-        fetchInterval = setInterval(fetchData, 10000); // Fetch every 10 seconds
+        // Interval untuk fetch data dan notifikasi setiap 10 detik
+        fetchInterval = setInterval(async () => {
+            try {
+                console.log("Polling data...");
+                await fetchData(); // Fetch perangkat
+                await fetchNotifications(); // Fetch notifikasi
+            } catch (error) {
+                console.error("Error during polling:", error);
+            }
+        }, 10000); // Interval 10 detik
     } catch (error) {
         console.error("Error in onMounted:", error);
     } finally {
-        isLoading.value = false; // Matikan loader setelah selesai
+        isLoading.value = false; // Nonaktifkan loader
     }
 });
 
 onBeforeUnmount(() => {
     if (fetchInterval) {
-        clearInterval(fetchInterval);
+        clearInterval(fetchInterval); // Hentikan interval saat komponen di-unmount
     }
 });
 </script>

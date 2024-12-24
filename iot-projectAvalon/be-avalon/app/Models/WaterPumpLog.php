@@ -20,6 +20,7 @@ class WaterPumpLog extends Model
         'start_time',
         'end_time',
         'duration',
+        'is_on',
     ];
 
     /**

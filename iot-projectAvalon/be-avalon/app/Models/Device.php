@@ -68,7 +68,7 @@ class Device extends Model
     /**
      * Relasi ke model WaterPumpLog
      */
-    public function waterPumpLog()
+    public function waterPumpLogs()
     {
         return $this->hasMany(WaterPumpLog::class, 'devices_id', 'devices_id');
     }

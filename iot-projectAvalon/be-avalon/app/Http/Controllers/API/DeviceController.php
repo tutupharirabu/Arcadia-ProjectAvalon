@@ -22,7 +22,9 @@ class DeviceController extends Controller
         }
 
         // Cari perangkat yang terhubung dengan users_id
-        $devices = Device::where('users_id', $userId)->get();
+        $devices = Device::where('users_id', $userId)
+            ->with('waterPumpLogs') // Memuat relasi water_pump_log
+            ->get();
 
         // Jika tidak ada perangkat, kembalikan data kosong dengan status 200
         if ($devices->isEmpty()) {

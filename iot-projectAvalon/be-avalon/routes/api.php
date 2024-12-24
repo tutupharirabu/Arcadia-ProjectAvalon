@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('water-pump')->middleware('auth:api')->group(function () {
         Route::post('/control', [WaterPumpController::class, 'controlPump']);
         Route::get('/log/{id}', [WaterPumpController::class, 'show']);
+        Route::put('/log/{logId}', [WaterPumpController::class, 'showWaterPumpLog']);
     });
 
     // Notification

@@ -33,16 +33,18 @@ class WaterPumpController extends Controller
         }
 
         if ($action === 'ON') {
-            // Simpan log saat pompa dinyalakan
+
+            // Simpan log baru saat pompa dinyalakan
             $log = WaterPumpLog::create([
                 'devices_id' => $deviceId,
                 'start_time' => Carbon::now(),
                 'end_time' => null,
                 'duration' => null, // Durasi belum diketahui
             ]);
+
             return response()->json([
                 'message' => 'Pompa air berhasil dinyalakan',
-                'log' => $log,
+                'water_pump_log_id' => $log->water_pump_log_id,
             ]);
         } elseif ($action === 'OFF') {
             // Validasi input tambahan untuk log ID
@@ -53,9 +55,8 @@ class WaterPumpController extends Controller
             $logId = $validated['water_pump_log_id'];
 
             // Perbarui log berdasarkan log ID
-            $log = WaterPumpLog::where('devices_id', $deviceId)
-                ->where('water_pump_log_id', $logId) // Gunakan log ID untuk memastikan log yang tepat
-                ->whereNull('end_time') // Pastikan log belum selesai
+            $log = WaterPumpLog::where('water_pump_log_id', $logId)
+                ->where('is_on', true) // Pastikan log aktif
                 ->first();
 
             if ($log) {
@@ -66,6 +67,7 @@ class WaterPumpController extends Controller
                 $log->update([
                     'end_time' => $endTime,
                     'duration' => $duration, // Simpan durasi
+                    'is_on' => false, // Tandai log sebagai tidak aktif
                 ]);
 
                 return response()->json([
@@ -108,5 +110,21 @@ class WaterPumpController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function showWaterPumpLog($logId)
+    {
+        $log = WaterPumpLog::where('water_pump_log_id', $logId)->first();
+
+        if (!$log) {
+            return response()->json([
+                'error' => 'Log tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Log ditemukan',
+            'log' => $log,
+        ]);
     }
 }

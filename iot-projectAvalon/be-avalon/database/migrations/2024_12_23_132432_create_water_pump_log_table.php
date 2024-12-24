@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('devices_id');
             $table->foreign('devices_id')->references('devices_id')->on('devices');
             $table->datetime('start_time');
+            $table->boolean('is_on')->default(true);
             $table->datetime('end_time')->nullable();
             $table->integer('duration')->nullable();
             $table->timestamps();

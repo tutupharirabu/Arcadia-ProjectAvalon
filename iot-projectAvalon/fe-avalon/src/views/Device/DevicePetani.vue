@@ -8,7 +8,7 @@
 
         <!-- Daftar perangkat -->
         <div v-else-if="devices.length > 0" class="grid grid-cols-1 gap-6">
-            <div v-for="(device, index) in devices" :key="device.deviceId"
+            <div v-for="(device) in devices" :key="device.deviceId"
                 class="bg-accent text-on-secondary shadow-lg rounded-lg p-4 border border-neutral relative">
                 <!-- Informasi Perangkat -->
                 <div class="mb-4">
@@ -25,10 +25,16 @@
                     <!-- Button Penyiraman untuk Water Pump Module -->
                     <button v-if="device.deviceType === 'Water Pump Module'"
                         class="btn bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 w-full md:w-auto"
-                        :disabled="loadingPumpControl[device.deviceId]" @click="togglePump(device.deviceId)">
+                        :disabled="loadingPumpControl[device.deviceId] || device.status !== 'Active'"
+                        @click="togglePump(device)">
                         <span v-if="loadingPumpControl[device.deviceId]" class="loading loading-spinner"></span>
-                        <span v-else>{{ pumpStatus[device.deviceId] === 'ON' ? 'Matikan Pompa' : 'Nyalakan Pompa'
-                            }}</span>
+                        <span v-else>
+                            {{
+                                device.waterPumpData.some(log => log.is_on === 1)
+                                    ? "Matikan Pompa"
+                            : "Nyalakan Pompa"
+                            }}
+                        </span>
                     </button>
 
                     <!-- Button Aktif/Nonaktif -->
@@ -107,7 +113,6 @@ let pollingInterval = null;
 
 // Pompa Air state
 const loadingPumpControl = ref({}); // Loader untuk tombol penyiraman
-const pumpStatus = ref({}); // Status ON/OFF pompa air
 
 // Fetch daftar perangkat
 const fetchDevices = async () => {
@@ -124,7 +129,10 @@ const fetchDevices = async () => {
             deviceName: device.device_name || "Unnamed Device",
             deviceType: device.device_type || "Unknown Type",
             status: device.status || "Unknown Status",
+            waterPumpData: device.water_pump_logs || null,
         }));
+
+        console.log("Devices:", devices.value);
 
         // Tutup modal secara otomatis saat polling berjalan
         if (showModal.value) {
@@ -205,21 +213,50 @@ const toggleDevice = async (deviceId, newStatus) => {
     }
 };
 
-// Fungsi untuk mengontrol pompa air
-const togglePump = async (deviceId) => {
-    const currentStatus = pumpStatus.value[deviceId] || "OFF";
-    const newAction = currentStatus === "ON" ? "OFF" : "ON";
+const pumpStatusLogs = ref({});
 
-    loadingPumpControl.value[deviceId] = true; // Aktifkan loader
+// Fungsi untuk mengontrol pompa air
+const togglePump = async (device) => {
+    loadingPumpControl.value[device.deviceId] = true; // Aktifkan loader
 
     try {
-        // Kirim permintaan ke API penyiraman
+        // Pastikan waterPumpData ada sebelum mencarinya
+        if (!device.waterPumpData || !Array.isArray(device.waterPumpData)) {
+            console.error("Data waterPumpData tidak ditemukan atau tidak valid untuk perangkat ini.");
+            modalTitle.value = "Error";
+            modalMessage.value = "Data log pompa air tidak ditemukan.";
+            showModal.value = true;
+            loadingPumpControl.value[device.deviceId] = false;
+            return;
+        }
+
+        // Cari log aktif (is_on === 1) untuk perangkat
+        const activeLog = device.waterPumpData.find(log => log.is_on === 1);
+
+        const newAction = activeLog ? "OFF" : "ON"; // Tentukan aksi berdasarkan log aktif
+
+        const requestBody = {
+            device_id: device.deviceId,
+            action: newAction,
+        };
+
+        if (newAction === "OFF") {
+            if (!activeLog || !activeLog.water_pump_log_id) {
+                console.error("Tidak ada log aktif untuk perangkat ini.");
+                modalTitle.value = "Error";
+                modalMessage.value = "Tidak dapat mematikan pompa karena log aktif tidak ditemukan.";
+                showModal.value = true;
+                loadingPumpControl.value[device.deviceId] = false;
+                return;
+            }
+
+            // Tambahkan log ID untuk mematikan pompa
+            requestBody.water_pump_log_id = activeLog.water_pump_log_id;
+        }
+
         const response = await customFetch.post(
             "/water-pump/control",
-            {
-                device_id: deviceId,
-                action: newAction,
-            },
+            requestBody,
             {
                 headers: {
                     Authorization: `Bearer ${AuthStore.tokenUser}`,
@@ -227,20 +264,34 @@ const togglePump = async (deviceId) => {
             }
         );
 
-        // Jika berhasil, perbarui status pompa
         if (response.status === 200) {
-            pumpStatus.value[deviceId] = newAction;
+            if (newAction === "ON") {
+                // Tambahkan log baru
+                device.waterPumpData.push({
+                    water_pump_log_id: response.data.water_pump_log_id,
+                    is_on: 1,
+                    start_time: new Date().toISOString(),
+                    end_time: null,
+                });
+            } else if (newAction === "OFF") {
+                // Perbarui log aktif
+                if (activeLog) {
+                    activeLog.is_on = 0;
+                    activeLog.end_time = new Date().toISOString();
+                }
+            }
+
             modalTitle.value = "Berhasil";
             modalMessage.value = `Pompa berhasil ${newAction === "ON" ? "dinyalakan" : "dimatikan"}.`;
             showModal.value = true;
         }
     } catch (error) {
-        console.error("Error controlling pump:", error);
+        console.error("Gagal mengontrol pompa:", error);
         modalTitle.value = "Error";
         modalMessage.value = "Gagal mengontrol pompa. Silakan coba lagi.";
         showModal.value = true;
     } finally {
-        loadingPumpControl.value[deviceId] = false; // Nonaktifkan loader
+        loadingPumpControl.value[device.deviceId] = false; // Nonaktifkan loader
     }
 };
 
