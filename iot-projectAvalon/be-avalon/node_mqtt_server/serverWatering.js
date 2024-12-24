@@ -240,5 +240,5 @@ app.post("/api/water-pump/control", (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`[INFO] Server berjalan di http://localhost:${PORT}`);
+    console.log(`[INFO] Server berjalan di https://arcadia-nodeserver-watering-development.up.railway.app:${PORT}`);
 });
