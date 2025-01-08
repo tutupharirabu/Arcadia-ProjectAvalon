@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ForgotPasswordMainSend extends Mailable
+class ForgotPasswordMailSend extends Mailable
 {
     use Queueable, SerializesModels;
 

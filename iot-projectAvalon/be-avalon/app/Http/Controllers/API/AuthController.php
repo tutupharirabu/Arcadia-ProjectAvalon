@@ -11,7 +11,7 @@ use App\Mail\RegisterMailSend;
 use Illuminate\Support\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
-use App\Mail\ForgotPasswordMainSend;
+use App\Mail\ForgotPasswordMailSend;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -194,7 +194,7 @@ class AuthController extends Controller
         }
 
         $user->generateOtpCodeData($user);
-        Mail::to($user->email)->send(new ForgotPasswordMainSend($user));
+        Mail::to($user->email)->send(new ForgotPasswordMailSend($user));
 
         return response()->json([
             'message' => 'OTP telah dikirim ke email Anda!',
