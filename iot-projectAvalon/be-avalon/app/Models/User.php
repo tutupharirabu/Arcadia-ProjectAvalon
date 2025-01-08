@@ -5,7 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use App\Models\Role;
-use App\Models\Otp_codes;
+use App\Models\OTP_codes;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
 use Tymon\JWTAuth\Contracts\JWTSubject;

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Models\Otp_codes;
+use App\Models\OTP_codes;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\RegisterMailSend;
