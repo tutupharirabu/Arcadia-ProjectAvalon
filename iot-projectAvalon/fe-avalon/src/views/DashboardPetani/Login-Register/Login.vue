@@ -12,5 +12,6 @@ onMounted(() => {
   localStorage.removeItem('accessForgotPassword');
   localStorage.removeItem('token'); 
   localStorage.removeItem('user'); 
+  localStorage.removeItem('userEmail'); 
 });
 </script>
