@@ -1,7 +1,7 @@
 <template>
-    <div class="flex min-h-screen items-center justify-center bg-neutral">
-        <FormAuth :isRegister="false" />
-    </div>
+  <div class="flex min-h-screen items-center justify-center bg-neutral">
+    <FormAuth :isRegister="false" />
+  </div>
 </template>
 
 <script setup>
@@ -10,8 +10,8 @@ import FormAuth from '@/components/Login-Register/FormAuth.vue'
 
 onMounted(() => {
   localStorage.removeItem('accessForgotPassword');
-  localStorage.removeItem('token'); 
-  localStorage.removeItem('user'); 
-  localStorage.removeItem('userEmail'); 
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userEmail');
 });
 </script>
