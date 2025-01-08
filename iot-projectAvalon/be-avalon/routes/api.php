@@ -66,6 +66,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/log/{logId}', [WaterPumpController::class, 'showWaterPumpLog']);
     });
 
+    // Water Alarm
+    Route::prefix('water-alarm')->middleware('auth:api')->group(function () {
+        Route::get('/', [WaterPumpController::class, 'index']);
+        Route::post('/', [WaterPumpController::class, 'updateOrCreate']);
+        Route::delete('/{id}', [WaterPumpController::class, 'destroy']);
+    });
+
     // Notification
     Route::prefix('notification')->middleware('auth:api')->group(function () {
         Route::post('/', [NotificationController::class, 'store']);

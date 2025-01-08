@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API;
 
-use Log;
 use Carbon\Carbon;
 use App\Models\WaterPumpLog;
 use Illuminate\Http\Request;
