@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('water_pump_alarm', function (Blueprint $table) {
+        Schema::create('water_pump_alarms', function (Blueprint $table) {
             $table->uuid('water_pump_alarm_id')->primary();
             $table->uuid('devices_id');
             $table->foreign('devices_id')->references('devices_id')->on('devices');
