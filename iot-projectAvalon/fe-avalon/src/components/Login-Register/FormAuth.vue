@@ -43,27 +43,27 @@
             <!-- Name Input (Register Only) -->
             <div v-if="props.isRegister" class="form-control mb-4">
                 <label class="label"><span class="label-text">Nama Lengkap</span></label>
-                <input type="text" placeholder="Isi Nama Lengkap" class="input bg-primary-content input-bordered" v-model="inputForm.name" />
+                <input type="text" placeholder="Isi Nama Lengkap" class="input bg-primary-content input-bordered" v-model="inputForm.name" required />
             </div>
 
             <!-- Email Input -->
             <div class="form-control mb-4">
                 <label class="label"><span class="label-text">Email</span></label>
-                <input type="email" placeholder="Isi Email" class="input bg-primary-content input-bordered" v-model="inputForm.email" />
+                <input type="email" placeholder="Isi Email" class="input bg-primary-content input-bordered" v-model="inputForm.email" required />
             </div>
 
             <!-- Password Input -->
             <div class="form-control mb-4">
                 <label class="label"><span class="label-text">Password</span></label>
                 <input type="password" placeholder="Isi Password" class="input input-bordered bg-primary-content"
-                    v-model="inputForm.password" />
+                    v-model="inputForm.password" required />
             </div>
 
             <!-- Confirm Password Input (Register Only) -->
             <div v-if="props.isRegister" class="form-control mb-4">
                 <label class="label"><span class="label-text">Konfirmasi Password</span></label>
                 <input type="password" placeholder="Konfirmasi Password Anda!" class="input input-bordered bg-primary-content"
-                    v-model="inputForm.password_confirmation" />
+                    v-model="inputForm.password_confirmation" required />
             </div>
 
             <!-- Forgot Password (Login Only) -->
