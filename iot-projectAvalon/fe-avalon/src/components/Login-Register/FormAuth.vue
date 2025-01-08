@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/Auth'
 
 const props = defineProps({
@@ -119,6 +119,11 @@ const handleSubmit = async () => {
         isLoading.value = false // Turn off loader
     }
 }
+
+watch(() => props.isRegister, () => {
+    authStore.isError = false; // Reset error state ketika berganti form
+    authStore.errMsg = ''; // Kosongkan pesan error
+})
 </script>
 
 <style scoped>
