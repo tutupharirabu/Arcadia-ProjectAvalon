@@ -6,6 +6,9 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    open: '/beranda',  // URL yang akan dibuka setelah server dijalankan
+  },
   plugins: [
     vue(),
     vueDevTools(),

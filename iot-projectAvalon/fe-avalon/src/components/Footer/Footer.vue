@@ -1,6 +1,5 @@
 <template>
-  <footer class="footer text-black px-10 py-8 bg-neutral-200">
-    <!-- Container Utama -->
+<footer class="footer text-black px-10 py-8" style="background-color: #FFF9E2;">   
     <div class="container mx-auto flex flex-col justify-between space-y-8 md:flex-row md:space-y-0">
       <!-- Bagian Kiri -->
       <div class="md:w-1/3 space-y-6 text-center md:text-left">
@@ -27,7 +26,7 @@
 
       <!-- Bagian Menu -->
       <div class="w-full md:w-2/3 flex justify-center md:justify-end">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center md:text-left">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center">
           <!-- Kontak Kami -->
           <div>
             <p class="text-lg font-semibold mb-4">Kontak Kami</p>
@@ -38,9 +37,9 @@
                 </router-link>
               </li>
               <li>
-                <router-link to="#" class="hover:text-pink-500">
-                  Contact Via WA
-                </router-link>
+                <a href="https://www.instagram.com/arcadiafloratech/" target="_blank" rel="noopener noreferrer" class="hover:text-pink-500">
+                  Contact Via Instagram
+                </a>
               </li>
             </ul>
           </div>
@@ -67,8 +66,8 @@
             <p class="text-lg font-semibold mb-4">Perusahaan</p>
             <ul class="space-y-2">
               <li>
-                <router-link to="/tentang-kami" class="hover:text-pink-500">
-                  Tentang Kami
+                <router-link to="/aktivitas" class="hover:text-pink-500">
+                  Aktivitas Kami
                 </router-link>
               </li>
               <li>
@@ -82,7 +81,7 @@
       </div>
     </div>
   </footer>
-  <div class="grid grid-cols-1 place-items-center bg-neutral-200">
+  <div class="grid grid-cols-1 place-items-center " style="background-color: #FFF9E2;" >
     <p class="text-sm font-semibold text-gray-600 mb-4">
       © 2024 Arcadia. All rights reserved.
     </p>
@@ -92,6 +91,18 @@
 <style scoped>
 a:hover {
   color: #fbb6ce;
-  /* Warna hover */
+}
+
+@media (max-width: 768px) {
+  .footer .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .footer .container .md\:w-1\/3 {
+    width: 100%;
+  }
+  .footer .container .md\:w-2\/3 {
+    width: 100%;
+  }
 }
 </style>

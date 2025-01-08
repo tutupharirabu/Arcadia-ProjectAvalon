@@ -1,3 +1,5 @@
+import daisyui from 'daisyui';
+
 /** @type {import('tailwindcss').Config} */
 import daisyui from 'daisyui';
 
@@ -17,7 +19,7 @@ export default {
     },
   },
   plugins: [
-    daisyui, // Ganti require dengan import
+    daisyui, // Menggunakan import untuk plugin DaisyUI
   ],
   daisyui: {
     themes: [
