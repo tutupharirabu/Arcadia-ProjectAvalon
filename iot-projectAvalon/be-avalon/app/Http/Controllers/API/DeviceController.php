@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Device;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\NotificationRecipient;
 
 class DeviceController extends Controller
 {
@@ -20,7 +22,9 @@ class DeviceController extends Controller
         }
 
         // Cari perangkat yang terhubung dengan users_id
-        $devices = Device::where('users_id', $userId)->get();
+        $devices = Device::where('users_id', $userId)
+            ->with('waterPumpLogs') // Memuat relasi water_pump_log
+            ->get();
 
         // Jika tidak ada perangkat, kembalikan data kosong dengan status 200
         if ($devices->isEmpty()) {
@@ -112,12 +116,14 @@ class DeviceController extends Controller
         $request->validate([
             'devices_id' => 'required|uuid', // Pastikan devices_id adalah UUID unik
             'device_type' => 'required|string|max:255',
+            'qrcode_url' => 'url',
         ]);
 
         // Simpan data perangkat tanpa users_id
         $device = Device::create([
             'devices_id' => $request->devices_id,
             'device_type' => $request->device_type,
+            'qrcode_url' => $request->qrcode_url,
             'status' => 'Not Linked To User',
         ]);
 
@@ -130,11 +136,12 @@ class DeviceController extends Controller
     /**
      * Tampilkan perangkat berdasarkan devices_id dan hubungkan jika belum ada users_id.
      */
-    public function showDevice($devices_id)
+    public function linkDevice($devices_id)
     {
         // Cari perangkat berdasarkan devices_id
         $device = Device::where('devices_id', $devices_id)->first();
 
+        // Jika perangkat tidak ditemukan
         if (!$device) {
             return response()->json([
                 'status' => 'error',
@@ -145,18 +152,48 @@ class DeviceController extends Controller
         // Ambil userId dari pengguna yang sedang login
         $userId = auth('api')->user()->users_id; // Pastikan `auth()` mengambil data pengguna yang terautentikasi
 
-        // Jika perangkat belum memiliki user_id, hubungkan dengan user_id pengguna yang sedang login
-        if (!$device->users_id) {
-            $device->users_id = $userId;
-            $device->status = "Active";
-            $device->save();
+        // Jika perangkat sudah memiliki users_id, kembalikan error
+        if ($device->users_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat sudah ditautkan dengan pengguna lain.',
+            ], 400); // 400 Bad Request
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data perangkat ditemukan.',
-            'data' => $device,
-        ], 200);
+        // Jika perangkat belum memiliki users_id, hubungkan dengan users_id pengguna yang sedang login
+        $device->users_id = $userId;
+        $device->status = "Active";
+        $device->save();
+
+        // Kirim notifikasi
+        try {
+            // Buat notifikasi
+            $notification = Notification::create([
+                'source' => 'device', // Sumber notifikasi dari perangkat
+                'title' => 'Perangkat Berhasil Ditautkan',
+                'message' => 'Perangkat dengan ID ' . $devices_id . ' berhasil ditautkan ke akun Anda.',
+                'type' => 'info',
+                'devices_id' => $devices_id, // Mengaitkan notifikasi dengan perangkat
+            ]);
+
+            // Tambahkan penerima notifikasi
+            NotificationRecipient::create([
+                'notifications_id' => $notification->notifications_id,
+                'users_id' => $userId, // Penerima adalah pengguna yang sedang login
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Perangkat berhasil ditautkan ke akun Anda dan notifikasi berhasil dikirim.',
+            ], 200);
+        } catch (\Exception $e) {
+            // Penanganan kesalahan
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat berhasil ditautkan, tetapi gagal mengirim notifikasi.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -252,10 +289,34 @@ class DeviceController extends Controller
         $device->status = 'Not Linked To User';
         $device->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Perangkat berhasil dihapus dari dashboard Anda.',
-            'data' => $device,
-        ], 200);
+        // Kirim notifikasi
+        try {
+            // Buat notifikasi
+            $notification = Notification::create([
+                'source' => 'device', // Sumber notifikasi dari perangkat
+                'title' => 'Perangkat Diputuskan dari Dashboard',
+                'message' => 'Perangkat dengan ID ' . $devices_id . ' telah dihapus dari dashboard Anda.',
+                'type' => 'info',
+                'devices_id' => $devices_id,
+            ]);
+
+            // Tambahkan penerima
+            NotificationRecipient::create([
+                'notifications_id' => $notification->notifications_id,
+                'users_id' => $userId, // Penerima adalah pengguna yang dihapuskan perangkatnya
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Perangkat berhasil dihapus dari dashboard Anda dan notifikasi berhasil dikirim.',
+                'data' => $device,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Perangkat berhasil dihapus dari dashboard Anda, tetapi gagal mengirim notifikasi.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

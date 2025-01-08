@@ -63,17 +63,17 @@
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
-            <button @click="showModal = false" class="btn btn-primary mt-4">OK</button>
+            <button @click="handleOk" class="btn btn-primary mt-4">OK</button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
@@ -86,6 +86,7 @@ const showModal = ref(false);
 const modalTitle = ref("");
 const modalMessage = ref("");
 const AuthStore = useAuthStore();
+let timeoutId = null;
 
 // Data Form
 const formData = ref({
@@ -94,6 +95,23 @@ const formData = ref({
     location: "",
     description: "",
 });
+
+const deviceType = ref("");
+
+// Fungsi untuk menangani tombol OK
+const handleOk = () => {
+    // Hapus timeout jika tombol OK ditekan
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+    }
+
+    // Periksa device_type untuk menentukan halaman tujuan
+    if (deviceType.value === "Water Pump Module") {
+        router.push({ name: 'DetailDeviceWatering', params: { id: route.params.id } });
+    } else {
+        router.push({ name: 'DetailDeviceMonitoring', params: { id: route.params.id } });
+    }
+};
 
 // Ambil Detail Alat
 const fetchDeviceDetail = async () => {
@@ -110,6 +128,9 @@ const fetchDeviceDetail = async () => {
             location: data.location || "",
             description: data.description || "",
         };
+
+        deviceType.value = data.device_type;
+
     } catch (error) {
         console.error("Error fetching device data:", error);
         modalTitle.value = "Error";
@@ -146,9 +167,18 @@ const submitForm = async () => {
         modalMessage.value = "Informasi alat berhasil diperbarui!";
         showModal.value = true;
 
-        setTimeout(() => {
-            router.push({ name: "DetailDevice", params: { id: route.params.id } });
-        }, 1500);
+        // Set timeout untuk otomatis redirect setelah 5 detik
+        timeoutId = setTimeout(() => {
+            if (deviceType.value === "Water Pump Module") {
+                router.push({ name: "DetailDeviceWatering", params: { id: route.params.id } });
+            } else if (deviceType === "Monitoring Module") {
+                router.push({ name: "DetailDeviceMonitoring", params: { id: route.params.id } });
+            } else {
+                // Rute fallback jika device_type tidak dikenali
+                console.warn("Device type tidak dikenali. Mengarahkan ke rute default.");
+                router.push({ name: "DashboardPetani" }); // Rute default, bisa disesuaikan
+            }
+        }, 5000);
     } catch (error) {
         console.error("Error updating device data:", error);
         modalTitle.value = "Error";
@@ -179,7 +209,11 @@ const fetchCurrentLocation = () => {
     }
 };
 
-fetchDeviceDetail();
+// Panggil fetchDeviceDetail pada mounted untuk memastikan deviceType diperbarui
+onMounted(async () => {
+    isLoading.value = true;
+    await fetchDeviceDetail();
+});
 </script>
 
 <style scoped>

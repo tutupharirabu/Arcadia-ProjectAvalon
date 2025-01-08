@@ -33,7 +33,6 @@ const router = createRouter({
           name: 'ArcadiaPartner',
           component: () => import('@/views/LandingPage/ArcadiaPartner.vue'),
         }
-
       ],
     },
 
@@ -54,9 +53,14 @@ const router = createRouter({
           component: () => import('../views/Device/DevicePetani.vue'),
         },
         {
-          path: 'device/:id',
-          name: 'DetailDevice',
-          component: () => import('../views/Device/DetailDevice/DetailDevicePetani.vue'),
+          path: 'device/monitoring/:id',
+          name: 'DetailDeviceMonitoring',
+          component: () => import('../views/Device/DetailDevice/DetailDeviceMonitoringPetani.vue'),
+        },
+        {
+          path: 'device/watering/:id',
+          name: 'DetailDeviceWatering',
+          component: () => import('../views/Device/DetailDevice/DetailDeviceWateringPetani.vue'),
         },
         {
           path: "device/update/:id",

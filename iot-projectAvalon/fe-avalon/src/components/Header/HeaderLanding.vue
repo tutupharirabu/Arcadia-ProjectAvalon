@@ -34,33 +34,44 @@
 </ul>
 
       </div>
-  
-      <!-- Navbar End (Login/Logout) -->
-      <div class="navbar-end mr-4">
-        <button v-if="currentUser" @click="handleLogout" class="btn btn-error">Logout</button>
-        <RouterLink v-else to="/monitoring-arcadia/login" class="btn bg-primary-content text-primary">
-          Login
-        </RouterLink>
-      </div>
+
+      <!-- Brand Title -->
+      <a class="btn btn-ghost text-xl text-primary-content">Arcadia Flora Tech</a>
     </div>
-  </template>
-  
-  <script setup>
-  import { useAuthStore } from "@/stores/Auth";
-  import { computed } from "vue";
-  import listNav from "@/utils/listNav";
-  
-  const authStore = useAuthStore();
-  const { currentUser, logoutUser } = authStore;
-  
-  const filterNavItems = computed(() => {
-    return listNav.filter((item) => {
-      // Menyembunyikan Profile jika user belum login
-      if (item.name === "Profile" && !currentUser) return false;
-      return true;
-    });
+
+    <!-- Navbar Center (Desktop Menu) -->
+    <div class="navbar-center hidden lg:flex">
+      <ul class="menu menu-horizontal px-1 text-primary-content">
+        <li v-for="item in filterNavItems" :key="item.name">
+          <RouterLink :to="item.url"> {{ item.name }} </RouterLink>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Navbar End (Login/Logout) -->
+    <div class="navbar-end mr-4">
+      <button v-if="currentUser" @click="handleLogout" class="btn btn-error">Logout</button>
+      <RouterLink v-else to="/monitoring-arcadia/login" class="btn bg-primary-content text-primary">
+        Login
+      </RouterLink>
+    </div>
+</template>
+
+<script setup>
+import { useAuthStore } from "@/stores/Auth";
+import { computed } from "vue";
+import listNav from "@/utils/listNav";
+
+const authStore = useAuthStore();
+const { currentUser, logoutUser } = authStore;
+
+const filterNavItems = computed(() => {
+  return listNav.filter((item) => {
+    // Menyembunyikan Profile jika user belum login
+    if (item.name === "Profile" && !currentUser) return false;
+    return true;
   });
-  
+});
   const handleLogout = () => {
     logoutUser();
   };
@@ -89,3 +100,4 @@
 }
 
 </style>
+
