@@ -33,7 +33,7 @@ class User extends Authenticatable implements JWTSubject
         $randomNumber = mt_rand(100000, 999999);
         $now = Carbon::now();
 
-        $otp = Otp_codes::updateOrCreate(
+        $otp = OTP_codes::updateOrCreate(
             ['users_id' => $user->users_id],
             [
                 'otp_code' => $randomNumber,
@@ -96,7 +96,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function otpCode()
     {
-        return $this->hasOne(Otp_codes::class, 'users_id');
+        return $this->hasOne(OTP_codes::class, 'users_id');
     }
 
     // Relasi ke notifikasi yang dikirim oleh pengguna

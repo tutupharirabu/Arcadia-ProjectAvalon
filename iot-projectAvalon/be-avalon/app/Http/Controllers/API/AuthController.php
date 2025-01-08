@@ -84,7 +84,7 @@ class AuthController extends Controller
             'otp_code' => 'required|numeric',
         ]);
 
-        $otp = Otp_codes::where('otp_code', $request->otp_code)->first();
+        $otp = OTP_codes::where('otp_code', $request->otp_code)->first();
 
         if (!$otp) {
             return response([
@@ -214,7 +214,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Email tidak ditemukan.'], 404);
         }
 
-        $otp = Otp_codes::where('users_id', $user->users_id)
+        $otp = OTP_codes::where('users_id', $user->users_id)
             ->where('otp_code', $request->otp_code)
             ->first();
 
@@ -251,7 +251,7 @@ class AuthController extends Controller
         $user->password_reset_token = null;
         $user->save();
 
-        Otp_codes::where('users_id', $user->users_id)->delete();
+        OTP_codes::where('users_id', $user->users_id)->delete();
 
         return response()->json([
             'message' => 'Password berhasil diubah~'
