@@ -1,6 +1,6 @@
 const listNav = [
     { name: "Beranda", url: "/beranda" },
-    { name: "Tentang Kami", url: "/tentang-kami" },
+    { name: "Aktivitas Kami", url: "/aktivitas" },
     { name: "Kontak Kami", url: "/kontak-kami" },
   ];
   

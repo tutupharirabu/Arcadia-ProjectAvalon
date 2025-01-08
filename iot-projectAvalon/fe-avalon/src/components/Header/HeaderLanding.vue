@@ -19,16 +19,20 @@
         </div>
   
         <!-- Brand Title -->
-        <a class="btn btn-ghost text-xl text-primary-content">Arcadia Flora Tech</a>
+        <a class="btn btn-ghost text-xl text-primary-content flex items-center space-x-2">
+          <img src="@/assets/LogoPutihArcadia.png" alt="Arcadia Logo" class="h-8 w-8" />
+          <span>Arcadia Flora Tech</span>
+        </a>
       </div>
   
       <!-- Navbar Center (Desktop Menu) -->
       <div class="navbar-center hidden lg:flex">
         <ul class="menu menu-horizontal px-1 text-primary-content">
-          <li v-for="item in filterNavItems" :key="item.name">
-            <RouterLink :to="item.url"> {{ item.name }} </RouterLink>
-          </li>
-        </ul>
+  <li v-for="item in filterNavItems" :key="item.name">
+    <RouterLink :to="item.url" class="text-navbar"> {{ item.name }} </RouterLink>
+  </li>
+</ul>
+
       </div>
   
       <!-- Navbar End (Login/Logout) -->
@@ -62,3 +66,26 @@
   };
   </script>
   
+  <style>
+.navbar {
+  z-index: 50; /* Pastikan navbar berada di atas elemen lain */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Bayangan untuk estetika */
+}
+
+.main-content {
+  padding-top: 4rem; /* Tambahkan jarak agar konten tidak tertutup navbar */
+}
+
+.text-navbar {
+  font-size: 1.0rem;
+  font-weight: 300;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.text-navbar:hover {
+  color: #FFF9E2;
+  text-decoration: underline;
+}
+
+</style>

@@ -18,12 +18,12 @@ const router = createRouter({
           component: () => import('@/views/LandingPage/HomeView.vue'),
         },
         {
-          path: 'tentang-kami', // Tambahkan rute ini
-          name: 'AboutUs',
-          component: () => import('@/views/LandingPage/AboutUs.vue'),
+          path: 'aktivitas', 
+          name: 'Activity',
+          component: () => import('@/views/LandingPage/Activity.vue'),
         },
         {
-          path: 'kontak-kami', // Tambahkan rute ini
+          path: 'kontak-kami',
           name: 'ContactUs',
           component: () => import('@/views/LandingPage/Contact.vue'),
         },

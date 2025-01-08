@@ -1,5 +1,9 @@
 <template>
+  
     <div class="container mx-auto py-16 px-4">
+      <div class="absolute inset-0 z-0">
+      <img src="@/assets/Background.png" alt="Hero Background" class="w-full h-full object-cover opacity-70 hidden md:block">
+    </div>
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold mb-4 text-gray-800">Kontak Kami</h1>
         <p class="text-lg text-gray-600">
@@ -43,7 +47,8 @@
         message: ""
       };
     },
-  };
+};
+
   </script>
   
   <style scoped>
