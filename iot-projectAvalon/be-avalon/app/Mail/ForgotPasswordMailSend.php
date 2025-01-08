@@ -42,7 +42,7 @@ class ForgotPasswordMailSend extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.forgotPasswordMail',
+            view: 'Mail.forgotPasswordMail',
             with: [
                 'name' => $this->user->name,
                 'otp' => $this->user->otpCode->otp_code,

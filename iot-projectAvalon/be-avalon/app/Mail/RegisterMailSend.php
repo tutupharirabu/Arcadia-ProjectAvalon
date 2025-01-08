@@ -42,7 +42,7 @@ class RegisterMailSend extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.registerMail',
+            view: 'Mail.registerMail',
             with: [
                 'name' => $this->user->name,
                 'otp' => $this->user->otpCode->otp_code,

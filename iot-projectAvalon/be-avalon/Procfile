@@ -1,1 +1,0 @@
-worker: php artisan schedule:work
