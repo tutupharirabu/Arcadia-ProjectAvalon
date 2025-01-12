@@ -87,7 +87,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { StreamQrcodeBarcodeReader } from "vue3-barcode-qrcode-reader";
+// import { StreamQrcodeBarcodeReader } from "vue3-barcode-qrcode-reader";
 import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
 

@@ -1,19 +1,23 @@
 <template>
-<div>
+  <div>
     <div class="absolute inset-0 z-0">
-      <img src="@/assets/Background.png" alt="Hero Background" class="w-full h-full object-cover opacity-70 hidden md:block">
+      <img src="@/assets/Background.png" alt="Hero Background"
+        class="w-full h-full object-cover opacity-70 hidden md:block">
     </div>
     <!-- Hero Section -->
-    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen " data-aos="fade-up">
+    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen "
+      data-aos="fade-up">
       <h2 class="text-lg font-medium text-pink-600 mb-2" data-aos="fade-up" data-aos-delay="100">
         Arcadia Flora Tech
       </h2>
 
-      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight" data-aos="fade-up" data-aos-delay="200">
+      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight" data-aos="fade-up"
+        data-aos-delay="200">
         Berkebun Cerdas <span class="text-gradient">Menebar Keindahan</span>
       </h1>
 
-      <div class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-lg text-base md:text-lg text-gray-800" style="max-width: 70%;" data-aos="fade-up" data-aos-delay="300">
+      <div class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-lg text-base md:text-lg text-gray-800"
+        style="max-width: 70%;" data-aos="fade-up" data-aos-delay="300">
         Enhance Your Agricultural Yields with Our Smart Technology.
       </div>
 
@@ -40,11 +44,12 @@
       <div class="relative grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <!-- Bagian Visi -->
         <div class="bg-white p-10 shadow-card rounded-lg relative z-10 mt-12">
-    <h2 class="text-2xl font-semibold text-pink-600 mb-4">Visi</h2>
-    <p class="text-gray-700 leading-relaxed">
-        Menjadi pelopor dalam pengembangan teknologi IoT inovatif yang mendukung keberlanjutan pertanian modern, khususnya di bidang budidaya tanaman hias, dengan fokus pada efisiensi, kualitas, dan ketahanan lingkungan.
-    </p>
-</div>
+          <h2 class="text-2xl font-semibold text-pink-600 mb-4">Visi</h2>
+          <p class="text-gray-700 leading-relaxed">
+            Menjadi pelopor dalam pengembangan teknologi IoT inovatif yang mendukung keberlanjutan pertanian modern,
+            khususnya di bidang budidaya tanaman hias, dengan fokus pada efisiensi, kualitas, dan ketahanan lingkungan.
+          </p>
+        </div>
 
 
         <!-- Gambar Visi -->
@@ -61,10 +66,14 @@
         <div class="bg-white p-8 shadow-card rounded-lg relative z-10 mt-12">
           <h2 class="text-2xl font-semibold text-pink-600 mb-4">Misi</h2>
           <ul class="list-disc pl-6 text-gray-700">
-            <li class="mb-2">Mengembangkan perangkat IoT yang mudah digunakan dan efektif untuk meningkatkan produktivitas pertanian, terutama dalam budidaya tanaman bunga.</li>
-            <li class="mb-2">Memberikan solusi inovatif untuk mengatasi permasalahan hama tanaman melalui teknologi penyiraman pestisida otomatis yang aman dan efisien.</li>
-            <li class="mb-2">Mendukung petani lokal dalam meningkatkan kualitas dan kuantitas hasil pertanian mereka dengan pendekatan berbasis teknologi.</li>
-            <li class="mb-2">Melakukan penelitian dan pengembangan secara berkelanjutan untuk menciptakan alat pertanian modern yang ramah lingkungan.</li>
+            <li class="mb-2">Mengembangkan perangkat IoT yang mudah digunakan dan efektif untuk meningkatkan
+              produktivitas pertanian, terutama dalam budidaya tanaman bunga.</li>
+            <li class="mb-2">Memberikan solusi inovatif untuk mengatasi permasalahan hama tanaman melalui teknologi
+              penyiraman pestisida otomatis yang aman dan efisien.</li>
+            <li class="mb-2">Mendukung petani lokal dalam meningkatkan kualitas dan kuantitas hasil pertanian mereka
+              dengan pendekatan berbasis teknologi.</li>
+            <li class="mb-2">Melakukan penelitian dan pengembangan secara berkelanjutan untuk menciptakan alat pertanian
+              modern yang ramah lingkungan.</li>
           </ul>
         </div>
       </div>
@@ -72,69 +81,91 @@
 
     <!-- Batas -->
     <hr class="my-12 border-t-2 border-pink-600 mx-auto w-1/2">
-    
+
     <!-- Memilih Section -->
     <div class="container mx-auto py-16 px-4 mb-12">
-  <div class="text-center mb-12">
-    <h2 class="text-3xl font-bold text-gray-800">Mengapa Memilih Kami?</h2>
-  </div>
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-800">Mengapa Memilih Kami?</h2>
+      </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
-    <!-- Inovasi Terdepan -->
-    <div class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
-      <img src="@/assets/InovasiTerdepan.png" alt="Inovasi Terdepan" class="feature-image mb-4">
-      <h3 class="text-xl font-bold text-pink-600">Inovasi Terdepan</h3>
-      <p class="text-gray-600">Produk kami menggunakan teknologi terbaru yang dirancang khusus untuk memenuhi kebutuhan petani bunga.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+        <!-- Inovasi Terdepan -->
+        <div
+          class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
+          <img src="@/assets/InovasiTerdepan.png" alt="Inovasi Terdepan" class="feature-image mb-4">
+          <h3 class="text-xl font-bold text-pink-600">Inovasi Terdepan</h3>
+          <p class="text-gray-600">Produk kami menggunakan teknologi terbaru yang dirancang khusus untuk memenuhi
+            kebutuhan petani bunga.</p>
+        </div>
+
+        <!-- Efisiensi dan Keefektifan -->
+        <div
+          class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
+          <img src="@/assets/EfisiensiTinggi.png" alt="Efisiensi dan Keefektifan" class="feature-image mb-4">
+          <h3 class="text-xl font-bold text-pink-600">Efisiensi dan Keefektifan</h3>
+          <p class="text-gray-600">Dengan Aqua Flow, proses penyiraman menjadi lebih presisi, hemat sumber daya, dan
+            mengurangi risiko kerusakan tanaman.</p>
+        </div>
+
+        <!-- Berbasis Bukti -->
+        <div
+          class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
+          <img src="@/assets/BerbasisBukti.png" alt="Berbasis Bukti" class="feature-image mb-4">
+          <h3 class="text-xl font-bold text-pink-600">Berbasis Bukti</h3>
+          <p class="text-gray-600">Hasil pengujian di Innovillage 2023 membuktikan efektivitas produk kami dalam
+            meningkatkan hasil pertanian.</p>
+        </div>
+
+        <!-- Komitmen terhadap Keberlanjutan -->
+        <div
+          class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
+          <img src="@/assets/Komitmen.png" alt="Komitmen terhadap Keberlanjutan" class="feature-image mb-4">
+          <h3 class="text-xl font-bold text-pink-600">Komitmen terhadap Keberlanjutan</h3>
+          <p class="text-gray-600">Kami tidak hanya berfokus pada hasil panen tetapi juga pada keberlanjutan lingkungan
+            dan kesejahteraan petani lokal.</p>
+        </div>
+
+        <!-- Dukungan Lokal -->
+        <div
+          class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
+          <img src="@/assets/Dukungan.png" alt="Dukungan Lokal" class="feature-image mb-4">
+          <h3 class="text-xl font-bold text-pink-600">Dukungan Lokal</h3>
+          <p class="text-gray-600">Sebagai perusahaan yang lahir dari Desa Cihideung, kami memahami kebutuhan spesifik
+            petani lokal dan berkomitmen untuk memberikan dampak yang nyata bagi komunitas kami.</p>
+        </div>
+      </div>
     </div>
 
-    <!-- Efisiensi dan Keefektifan -->
-    <div class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
-      <img src="@/assets/EfisiensiTinggi.png" alt="Efisiensi dan Keefektifan" class="feature-image mb-4">
-      <h3 class="text-xl font-bold text-pink-600">Efisiensi dan Keefektifan</h3>
-      <p class="text-gray-600">Dengan Aqua Flow, proses penyiraman menjadi lebih presisi, hemat sumber daya, dan mengurangi risiko kerusakan tanaman.</p>
-    </div>
 
-    <!-- Berbasis Bukti -->
-    <div class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
-      <img src="@/assets/BerbasisBukti.png" alt="Berbasis Bukti" class="feature-image mb-4">
-      <h3 class="text-xl font-bold text-pink-600">Berbasis Bukti</h3>
-      <p class="text-gray-600">Hasil pengujian di Innovillage 2023 membuktikan efektivitas produk kami dalam meningkatkan hasil pertanian.</p>
-    </div>
+    <!-- Batas -->
+    <hr class="my-12 border-t-2 border-pink-600 mx-auto w-1/2">
 
-    <!-- Komitmen terhadap Keberlanjutan -->
-    <div class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
-      <img src="@/assets/Komitmen.png" alt="Komitmen terhadap Keberlanjutan" class="feature-image mb-4">
-      <h3 class="text-xl font-bold text-pink-600">Komitmen terhadap Keberlanjutan</h3>
-      <p class="text-gray-600">Kami tidak hanya berfokus pada hasil panen tetapi juga pada keberlanjutan lingkungan dan kesejahteraan petani lokal.</p>
-    </div>
-
-    <!-- Dukungan Lokal -->
-    <div class="flex flex-col items-center text-center p-4 bg-white shadow-card rounded-lg transform hover:scale-105 transition duration-300">
-      <img src="@/assets/Dukungan.png" alt="Dukungan Lokal" class="feature-image mb-4">
-      <h3 class="text-xl font-bold text-pink-600">Dukungan Lokal</h3>
-      <p class="text-gray-600">Sebagai perusahaan yang lahir dari Desa Cihideung, kami memahami kebutuhan spesifik petani lokal dan berkomitmen untuk memberikan dampak yang nyata bagi komunitas kami.</p>
-    </div>
-  </div>
-</div>
-
-
-      <!-- Batas -->
-      <hr class="my-12 border-t-2 border-pink-600 mx-auto w-1/2">
-
-      <!-- Meet Our Team -->
-      <div class="container mx-auto py-2 px-4 mb-12">
+    <div>
+    <!-- Meet Our Team Section -->
+    <div class="container mx-auto py-2 px-4 mb-12">
       <div class="mt-16 mb-12 text-center">
         <h2 class="text-3xl font-bold text-gray-800 mb-12">Meet Our Team</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-aos="fade-up">
-          <div
-            v-for="(member, index) in team"
-            :key="member.name"
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12" data-aos="fade-up">
+          <div v-for="(member, index) in team.slice(0, 3)" :key="member.name"
             class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300"
-            :data-aos="'fade-up'"
-            :data-aos-delay="index * 100 + 100"
-          >
+            :data-aos="'fade-up'" :data-aos-delay="index * 100 + 100">
             <div class="w-40 h-40 mx-auto overflow-hidden rounded-full bg-gray-200 mb-4">
-              <img :src="member.image" :alt="member.name" class="w-full h-full object-cover">
+              <img :src="member.image" :alt="member.name" class="w-full h-40 object-cover">
+            </div>
+            <div class="p-4 bg-pink-50">
+              <h3 class="text-xl font-semibold text-gray-800">{{ member.name }}</h3>
+              <p class="text-gray-600">{{ member.role }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-aos="fade-up">
+          <div v-for="(member, index) in team.slice(3, 7)" :key="member.name"
+            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300"
+            :data-aos="'fade-up'" :data-aos-delay="index * 100 + 400">
+            <div class="w-40 h-40 mx-auto overflow-hidden rounded-full bg-gray-200 mb-4">
+              <img :src="member.image" :alt="member.name" class="w-full h-40 object-cover">
             </div>
             <div class="p-4 bg-pink-50">
               <h3 class="text-xl font-semibold text-gray-800">{{ member.name }}</h3>
@@ -143,37 +174,37 @@
           </div>
         </div>
       </div>
-      </div>
+    </div>
+  </div>
 
   </div>
 </template>
 <script>
-  export default {
-    name: "ContactUs",
-    data() {
-      return {
-        name: "",
-        email: "",
-        message: ""
-      };
-    },
-    data() {
+export default {
+  name: "ContactUs",
+  data() {
+    return {
+      name: "",
+      email: "",
+      message: ""
+    };
+  },
+  data() {
     return {
       team: [
-        { name: 'Salsa Arifah Zakkiyah', role: 'CEO', image: 'https://via.placeholder.com/200x200' },
-        { name: 'Irfan Zharauri Nanda S.', role: 'CTO', image: 'https://via.placeholder.com/200x200' },
-        { name: 'Abdurahman Dzakky', role: 'CDO', image: 'https://via.placeholder.com/200x200' },
-        { name: 'Hafiz Yazid Muhammad', role: 'CIOT', image: 'https://via.placeholder.com/200x200' },
-        // { name: 'Masna Abdul Baqi', role: 'Bussiness Analyst', image: 'https://via.placeholder.com/200x200' },
-        // { name: 'Farhan Fath Fajar', role: 'IoT Developer', image: 'https://via.placeholder.com/200x200' },
-        // { name: 'Ghaida Tsuraya Ali', role: 'Digital Marketing', image: 'https://via.placeholder.com/200x200' },
-        // { name: 'Deazard Muhammad A.', role: 'Software Engineer Developer', image: 'https://via.placeholder.com/200x200' },
+        { name: 'Salsa Arifah Zakkiyah', role: 'CEO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355722/arcadia-foto-pribadi/cbv5g9gnita7ii7o3sw8.png' },
+        { name: 'Irfan Zharauri Nanda S.', role: 'CTO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355718/arcadia-foto-pribadi/twcw22vudo08n2ctvins.png' },
+        { name: 'Abdurahman Dzakky', role: 'CDO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/r8wb5wlwxqhdyoexc3ob.png' },
+        { name: 'Masna Abdul Baqi', role: 'Bussiness Analyst', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355719/arcadia-foto-pribadi/pjvx5ra7y8cyet3pky0d.png' },
+        { name: 'Farhan Fath Fajar', role: 'IoT Developer', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/woq3fs4aehyrtthkoc8s.png' },
+        { name: 'Ghaida Tsuraya Ali', role: 'Digital Marketing', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/hd43oasryncpz3njmq7c.png' },
+        { name: 'Deazard Muhammad A.', role: 'Software Engineer Developer', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355716/arcadia-foto-pribadi/mrjqpbmdlgefasgjoxx7.png' },
       ],
     };
   },
 };
 
-  </script>
+</script>
 
 <style scoped>
 .text-gradient {
@@ -200,35 +231,46 @@
 }
 
 .custom-imageVisi {
-  width: 100%; 
+  width: 100%;
   max-width: 600px;
   height: auto;
-  transition: transform 0.3s ease-in-out; /* Efek animasi hover */
+  transition: transform 0.3s ease-in-out;
+  /* Efek animasi hover */
 
 }
+
 .custom-imageMisi {
-  width: 100%; 
+  width: 100%;
   max-width: 600px;
   height: auto;
-  transition: transform 0.3s ease-in-out; /* Efek animasi hover */
+  transition: transform 0.3s ease-in-out;
+  /* Efek animasi hover */
 
 }
+
 .custom-imageVisi:hover {
-  transform: scale(1.1); /* Perbesar gambar saat hover */
+  transform: scale(1.1);
+  /* Perbesar gambar saat hover */
 }
+
 .custom-imageMisi:hover {
-  transform: scale(1.1); /* Perbesar gambar saat hover */
+  transform: scale(1.1);
+  /* Perbesar gambar saat hover */
 }
 
 .feature-image {
-  width: 200px; /* Ukuran gambar diperbesar */
+  width: 200px;
+  /* Ukuran gambar diperbesar */
   height: auto;
-  object-fit: contain; /* Gambar tetap proporsional */
-  transition: transform 0.3s ease-in-out; /* Efek animasi hover */
+  object-fit: contain;
+  /* Gambar tetap proporsional */
+  transition: transform 0.3s ease-in-out;
+  /* Efek animasi hover */
 }
 
 .feature-image:hover {
-  transform: scale(1.1); /* Perbesar gambar saat hover */
+  transform: scale(1.1);
+  /* Perbesar gambar saat hover */
 }
 
 .text-center h3 {
@@ -243,12 +285,15 @@
 }
 
 .min-h-screen {
-  min-height: 80vh; /* Hero Section memenuhi layar penuh */
+  min-height: 80vh;
+  /* Hero Section memenuhi layar penuh */
 }
 
 .mb-16 {
-  margin-bottom: 4rem; /* Menambahkan jarak antara Hero dan About Section */
+  margin-bottom: 4rem;
+  /* Menambahkan jarak antara Hero dan About Section */
 }
+
 .shadow-card {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
@@ -258,6 +303,4 @@
   transform: scale(1.03);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
-
-
 </style>
