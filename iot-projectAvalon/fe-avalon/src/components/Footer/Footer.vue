@@ -41,6 +41,11 @@
                   Contact Via Instagram
                 </a>
               </li>
+              <li>
+                <a href="https://wa.me/6285121072770/" target="_blank" rel="noopener noreferrer" class="hover:text-pink-500">
+                  Contact Via Whatsapp
+                </a>
+              </li>
             </ul>
           </div>
 

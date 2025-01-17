@@ -19,10 +19,24 @@ const router = createRouter({
           component: () => import('@/views/LandingPage/HomeView.vue'),
         },
         {
-          path: 'aktivitas', 
-          name: 'Activity',
-          component: () => import('@/views/LandingPage/Activity.vue'),
+          path: 'aktivitas',
+          redirect: '/aktivitas/innovillage-2023',  // Mengarahkan ke halaman Innovillage2023
+          children: [
+            {
+              path: 'innovillage-2023',
+              name: 'Innovillage2023',
+              component: () => import('@/views/LandingPage/Activity/Innovillage2023.vue'),
+            },
+            {
+              path: 'inkubasi-btp',
+              name: 'InkubasiBTP',
+              component: () => import('@/views/LandingPage/Activity/InkubasiBTP.vue'),
+            },
+          ],
+          meta: { hideFooter: true },
         },
+        
+        
         {
           path: 'kontak-kami',
           name: 'ContactUs',
