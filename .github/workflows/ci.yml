@@ -23,7 +23,7 @@ jobs:
       JWT_SECRET: dummy-ci-jwt-secret-0123456789abcdef
     defaults:
       run:
-        working-directory: iot-projectAvalon/be-avalon
+        working-directory: be-avalon
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: iot-projectAvalon/fe-avalon
+        working-directory: fe-avalon
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: iot-projectAvalon/fe-avalon/package-lock.json
+          cache-dependency-path: fe-avalon/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: iot-projectAvalon/be-avalon/node_mqtt_server
+        working-directory: be-avalon/node_mqtt_server
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: iot-projectAvalon/be-avalon/node_mqtt_server/package-lock.json
+          cache-dependency-path: be-avalon/node_mqtt_server/package-lock.json
 
       - name: Install dependencies
         run: npm ci
