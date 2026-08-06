@@ -11,7 +11,10 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    vueDevTools(),
+    // Cypress component test tidak kompatibel dengan @vue/devtools-kit (unhandled rejection) —
+    // plugin hanya diaktifkan di luar environment test (Cypress men-set NODE_ENV=test).
+    // DevTools browser tetap bisa dipakai via extension.
+    ...(process.env.NODE_ENV === 'test' ? [] : [vueDevTools()]),
   ],
   resolve: {
     alias: {
