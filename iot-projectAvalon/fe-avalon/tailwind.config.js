@@ -1,8 +1,6 @@
 import daisyui from 'daisyui';
 
 /** @type {import('tailwindcss').Config} */
-import daisyui from 'daisyui';
-
 export default {
   content: [
     "./index.html",
@@ -32,27 +30,27 @@ export default {
           "secondary-content": "#FFFFFF", // Kontras dengan warna putih
 
           "accent": "#FEC7B4", // Warna aksen - Peach lembut
-          "accent-content": "#FFFFFF", // Kontras dengan warna putih
+          "accent-content": "#4A2E2B", // Coklat tua, kontras 8.2:1 di atas peach (WCAG AA)
 
-          "neutral": "#8B8B8B", // Warna netral - Abu-abu gelap
+          "neutral": "#6B6B6B", // Warna netral - Abu-abu, kontras 5.3:1 di atas putih (WCAG AA)
           "neutral-content": "#FFFFFF", // Kontras dengan warna putih
 
           "base-100": "#FFFFFF", // Warna dasar terang
           "base-200": "#FEC7B4", // Warna dasar menengah - Peach lembut
           "base-300": "#FC819E", // Warna dasar gelap - Pink lembut
 
-          "base-content": "#8B8B8B", // Konten utama - Abu-abu gelap
+          "base-content": "#6B6B6B", // Konten utama - Abu-abu gelap, kontras 5.3:1 di atas putih
 
           "info": "#F7418F", // Warna informasi - Pink cerah
           "info-content": "#FFFFFF", // Kontras dengan warna putih
 
           "success": "#FEC7B4", // Warna sukses - Peach lembut
-          "success-content": "#FFFFFF", // Kontras dengan warna putih
+          "success-content": "#4A2E2B", // Coklat tua, kontras 8.2:1 di atas peach (WCAG AA)
 
           "warning": "#FFF9E2", // Warna peringatan - Kuning pucat
-          "warning-content": "#8B8B8B", // Kontras dengan abu-abu gelap
+          "warning-content": "#6B6B6B", // Kontras 5.0:1 di atas kuning pucat (WCAG AA)
 
-          "error": "#FC819E", // Warna kesalahan - Pink lembut
+          "error": "#DC2626", // Warna kesalahan - Merah, kontras 4.8:1 dengan putih (WCAG AA)
           "error-content": "#FFFFFF" // Kontras dengan warna putih
         },
       },

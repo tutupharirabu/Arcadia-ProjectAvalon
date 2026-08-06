@@ -7,6 +7,7 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\WaterPumpController;
 use App\Http\Middleware\VerifyPasswordResetToken;
+use App\Http\Controllers\API\WaterPumpAlarmController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\HistoricalDataController;
 use App\Http\Controllers\API\NotificationRecipientController;
@@ -16,19 +17,19 @@ Route::prefix('v1')->group(function () {
     // Register - Login
     Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
         Route::get('/me', [AuthController::class, 'getUser'])->middleware('auth:api');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
         // Generate OTP Code - Verification Email
-        Route::post('/generate-otp-code', [AuthController::class, 'generateOtpCode']);
-        Route::post('/verification-email', [AuthController::class, 'verificationEmail'])->middleware('auth:api');
+        Route::post('/generate-otp-code', [AuthController::class, 'generateOtpCode'])->middleware('throttle:auth');
+        Route::post('/verification-email', [AuthController::class, 'verificationEmail'])->middleware('auth:api', 'throttle:auth');
 
         // Forgot Password
         Route::prefix('forgot-password')->group(function () {
-            Route::post('/send-email', [AuthController::class, 'forgotPassword']);
-            Route::post('/verify-otp-code', [AuthController::class, 'verifyOtpForgotPassword']);
-            Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(VerifyPasswordResetToken::class);
+            Route::post('/send-email', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+            Route::post('/verify-otp-code', [AuthController::class, 'verifyOtpForgotPassword'])->middleware('throttle:auth');
+            Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(VerifyPasswordResetToken::class, 'throttle:auth');
         });
     });
 
@@ -48,6 +49,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/check-public/{devices_id}', [DeviceController::class, 'checkDeviceExistPublic']);
 
         Route::middleware('auth:api')->group(function () {
+            // {userId?} dipertahankan agar FE tetap jalan, namun diabaikan oleh controller
+            // (identitas selalu diambil dari token JWT)
             Route::get('/check-by-user/{userId?}', [DeviceController::class, 'getDevicesByUser']);
             Route::get('/check-private/{devices_id}', [DeviceController::class, 'checkDeviceExistPrivate']);
 
@@ -63,26 +66,33 @@ Route::prefix('v1')->group(function () {
     Route::prefix('water-pump')->middleware('auth:api')->group(function () {
         Route::post('/control', [WaterPumpController::class, 'controlPump']);
         Route::get('/log/{id}', [WaterPumpController::class, 'show']);
+        // PUT /log/{logId} adalah endpoint read-only (artefak copy-paste) — dipertahankan
+        // agar klien lama tetap jalan. FE hanya memakai GET /water-pump/log/{devices_id}
+        // (device-based, route di atas) — GET /log/{logId} ini alias REST-correct untuk
+        // lookup berbasis water_pump_log_id, terdaftar ke handler yang sama dengan PUT.
+        Route::get('/log/{logId}', [WaterPumpController::class, 'showWaterPumpLog']);
         Route::put('/log/{logId}', [WaterPumpController::class, 'showWaterPumpLog']);
     });
 
     // Water Alarm
     Route::prefix('water-alarm')->middleware('auth:api')->group(function () {
-        Route::get('/', [WaterPumpController::class, 'index']);
-        Route::post('/', [WaterPumpController::class, 'updateOrCreate']);
-        Route::delete('/{id}', [WaterPumpController::class, 'destroy']);
+        Route::get('/', [WaterPumpAlarmController::class, 'index']);
+        Route::post('/', [WaterPumpAlarmController::class, 'updateOrCreate']);
+        Route::delete('/{id}', [WaterPumpAlarmController::class, 'destroy']);
     });
 
     // Notification
     Route::prefix('notification')->middleware('auth:api')->group(function () {
-        Route::post('/', [NotificationController::class, 'store']);
+        Route::post('/', [NotificationController::class, 'store'])->middleware(isAdmin::class);
         Route::get('/', [NotificationController::class, 'index']);
-        Route::get('/{id}', [NotificationController::class, 'show']);
 
+        // Diletakkan sebelum '/{id}' agar tidak ternaungi (route shadowing)
         Route::prefix('recipient')->group(function () {
             Route::get('/', [NotificationRecipientController::class, 'getNotificationsForRecipient']);
             Route::put('/{id}', [NotificationRecipientController::class, 'markAsRead']);
         });
+
+        Route::get('/{id}', [NotificationController::class, 'show']);
     });
 
     // Historical Data

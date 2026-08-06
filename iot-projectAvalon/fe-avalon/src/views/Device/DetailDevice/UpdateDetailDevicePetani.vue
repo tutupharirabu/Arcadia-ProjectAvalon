@@ -63,7 +63,8 @@
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Update Alat"
+        class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50" @click.self="closeModalOnly">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
@@ -73,9 +74,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
 
 const route = useRoute();
@@ -85,8 +85,32 @@ const isSubmitting = ref(false);
 const showModal = ref(false);
 const modalTitle = ref("");
 const modalMessage = ref("");
-const AuthStore = useAuthStore();
 let timeoutId = null;
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
+
+// Buka modal sambil menyimpan elemen yang fokus sebelumnya
+const openResultModal = (title, message) => {
+    lastFocusedElement = document.activeElement;
+    modalTitle.value = title;
+    modalMessage.value = message;
+    showModal.value = true;
+};
+
+// Tutup modal tanpa navigasi (digunakan untuk ESC / klik di luar modal)
+const closeModalOnly = () => {
+    showModal.value = false;
+    lastFocusedElement?.focus?.();
+};
+
+// Tutup modal mana pun yang terbuka saat ESC ditekan
+const handleModalKeydown = (event) => {
+    if (event.key === "Escape" && showModal.value) {
+        closeModalOnly();
+    }
+};
+
+onMounted(() => window.addEventListener("keydown", handleModalKeydown));
+onUnmounted(() => window.removeEventListener("keydown", handleModalKeydown));
 
 // Data Form
 const formData = ref({
@@ -117,9 +141,7 @@ const handleOk = () => {
 const fetchDeviceDetail = async () => {
     const deviceId = route.params.id;
     try {
-        const response = await customFetch.get(`/device/check-private/${deviceId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/device/check-private/${deviceId}`);
         const data = response.data.data;
 
         formData.value = {
@@ -133,9 +155,7 @@ const fetchDeviceDetail = async () => {
 
     } catch (error) {
         console.error("Error fetching device data:", error);
-        modalTitle.value = "Error";
-        modalMessage.value = "Gagal mengambil data alat!";
-        showModal.value = true;
+        openResultModal("Error", "Gagal mengambil data alat!");
     } finally {
         isLoading.value = false;
     }
@@ -157,33 +177,26 @@ const submitForm = async () => {
                 status: statusValue,
                 location: formData.value.location,
                 description: formData.value.description,
-            },
-            {
-                headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
             }
         );
 
-        modalTitle.value = "Berhasil";
-        modalMessage.value = "Informasi alat berhasil diperbarui!";
-        showModal.value = true;
+        openResultModal("Berhasil", "Informasi alat berhasil diperbarui!");
 
         // Set timeout untuk otomatis redirect setelah 5 detik
         timeoutId = setTimeout(() => {
             if (deviceType.value === "Water Pump Module") {
                 router.push({ name: "DetailDeviceWatering", params: { id: route.params.id } });
-            } else if (deviceType === "Monitoring Module") {
+            } else if (deviceType.value === "Monitoring Module") {
                 router.push({ name: "DetailDeviceMonitoring", params: { id: route.params.id } });
             } else {
                 // Rute fallback jika device_type tidak dikenali
                 console.warn("Device type tidak dikenali. Mengarahkan ke rute default.");
-                router.push({ name: "DashboardPetani" }); // Rute default, bisa disesuaikan
+                router.push({ name: "HomeDashboardPetani" }); // Rute default, bisa disesuaikan
             }
         }, 5000);
     } catch (error) {
         console.error("Error updating device data:", error);
-        modalTitle.value = "Error";
-        modalMessage.value = "Gagal memperbarui informasi alat!";
-        showModal.value = true;
+        openResultModal("Error", "Gagal memperbarui informasi alat!");
     } finally {
         isSubmitting.value = false;
     }
@@ -197,15 +210,11 @@ const fetchCurrentLocation = () => {
                 formData.value.location = `${position.coords.latitude}, ${position.coords.longitude}`;
             },
             () => {
-                modalTitle.value = "Error";
-                modalMessage.value = "Gagal mengambil lokasi!";
-                showModal.value = true;
+                openResultModal("Error", "Gagal mengambil lokasi!");
             }
         );
     } else {
-        modalTitle.value = "Error";
-        modalMessage.value = "Geolocation tidak didukung di browser ini.";
-        showModal.value = true;
+        openResultModal("Error", "Geolocation tidak didukung di browser ini.");
     }
 };
 

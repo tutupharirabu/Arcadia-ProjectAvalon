@@ -49,7 +49,8 @@
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Verifikasi Email"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" @click.self="closeModal">
         <div class="bg-white rounded-lg p-6 shadow-lg text-center w-80">
             <h3 class="text-lg font-bold mb-4 text-base-content">{{ modalTitle }}</h3>
             <p class="text-base-content mb-6">{{ modalMessage }}</p>
@@ -59,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/Auth';
 import { useRouter } from 'vue-router';
 import customFetch from '@/utils/customFetch';
@@ -79,6 +80,15 @@ const showModal = ref(false);
 const modalTitle = ref('');
 const modalMessage = ref('');
 let isRedirect = false; // Flag untuk redirect
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
+
+// Buka modal sambil menyimpan elemen yang fokus sebelumnya
+const openResultModal = (title, message) => {
+    lastFocusedElement = document.activeElement;
+    modalTitle.value = title;
+    modalMessage.value = message;
+    showModal.value = true;
+};
 
 // Submit Verifikasi OTP
 const submitVerification = async () => {
@@ -86,22 +96,15 @@ const submitVerification = async () => {
     try {
         const response = await customFetch.post(
             '/auth/verification-email',
-            { otp_code: otp.value },
-            {
-                headers: { 'Authorization': `Bearer ${AuthStore.tokenUser}` }
-            }
+            { otp_code: otp.value }
         );
 
-        modalTitle.value = 'Verifikasi Berhasil';
-        modalMessage.value = response.data.message;
+        openResultModal('Verifikasi Berhasil', response.data.message);
         isRedirect = true; // Aktifkan redirect
-        showModal.value = true;
     } catch (error) {
         console.error('Gagal memverifikasi kode OTP:', error);
-        modalTitle.value = 'Kesalahan';
-        modalMessage.value = error.response?.data?.message || 'Terjadi kesalahan saat memverifikasi.';
+        openResultModal('Kesalahan', error.response?.data?.message || 'Terjadi kesalahan saat memverifikasi.');
         isRedirect = false;
-        showModal.value = true;
     } finally {
         isVerifying.value = false; // Matikan loader
     }
@@ -115,24 +118,18 @@ const resendOtp = async () => {
     try {
         const email = AuthStore.currentUser.email;
         if (!email) {
-            modalTitle.value = 'Kesalahan';
-            modalMessage.value = 'Email tidak ditemukan. Silakan ulangi proses login.';
-            showModal.value = true;
+            openResultModal('Kesalahan', 'Email tidak ditemukan. Silakan ulangi proses login.');
             return;
         }
 
         const response = await customFetch.post('/auth/generate-otp-code', { email });
-        modalTitle.value = 'Kode OTP Dikirim Ulang';
-        modalMessage.value = response.data.message;
-        showModal.value = true;
+        openResultModal('Kode OTP Dikirim Ulang', response.data.message);
 
         isResendDisabled.value = true;
         startCountdown(60); // Mulai countdown
     } catch (error) {
         console.error('Gagal mengirim ulang kode OTP:', error);
-        modalTitle.value = 'Kesalahan';
-        modalMessage.value = error.response?.data?.message || 'Terjadi kesalahan saat mengirim ulang OTP.';
-        showModal.value = true;
+        openResultModal('Kesalahan', error.response?.data?.message || 'Terjadi kesalahan saat mengirim ulang OTP.');
     } finally {
         isResending.value = false; // Matikan loader
     }
@@ -153,8 +150,19 @@ const startCountdown = (seconds) => {
 // Tutup Modal
 const closeModal = () => {
     showModal.value = false;
+    lastFocusedElement?.focus?.();
     if (isRedirect) {
         router.push('/monitoring-arcadia/login');
     }
 };
+
+// Tutup modal saat ESC ditekan
+const handleModalKeydown = (event) => {
+    if (event.key === 'Escape' && showModal.value) {
+        closeModal();
+    }
+};
+
+onMounted(() => window.addEventListener('keydown', handleModalKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleModalKeydown));
 </script>

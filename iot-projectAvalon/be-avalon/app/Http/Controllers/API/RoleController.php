@@ -87,21 +87,26 @@ class RoleController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        // Unique exclude self: PK tabel roles adalah `roles_id` (UUID), bukan `id`
         $validatedData = $request->validate([
-            'title' => 'required|unique:roles'
+            'title' => 'required|unique:roles,title,' . $id . ',roles_id'
         ], [
             'required' => 'Silahkan masukkan :attribute yang sesuai!',
             'unique' => 'Terdapat data dengan nama role yang sama dalam database',
         ]);
 
-        $findData = Role::where('roles_id', '=', $id)
-                            ->update($validatedData);
+        $findData = Role::where('roles_id', '=', $id)->first();
 
         if (!$findData) {
             return response([
                 "message" => "Data $id tidak ada dalam database~",
             ], 404);
         }
+
+        // update() mengembalikan jumlah baris terpengaruh — jika nilai tidak berubah
+        // (update dengan nilai sama) hasilnya 0 tapi data tetap ADA. Karena itu 404
+        // ditentukan dari keberadaan record, bukan dari jumlah baris ter-update.
+        $findData->update($validatedData);
 
         return response([
             "message" => "Update data Role berhasil dilakukan!",

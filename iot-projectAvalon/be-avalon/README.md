@@ -1,66 +1,134 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# be-avalon — Backend Platform IoT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend API (Laravel 11) untuk platform IoT Avalon: kontrol pompa air, monitoring sensor, notifikasi, dan alarm terjadwal. API melayani frontend Vue (`fe-avalon`) dan dijembatani ke perangkat fisik (firmware) melalui servis Node.js (`node_mqtt_server`) yang menghubungkan ke broker MQTT.
 
-## About Laravel
+## Arsitektur
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```mermaid
+flowchart LR
+    FE[fe-avalon<br/>Vue 3 + Vite] -->|HTTP /api/v1| API[Laravel API<br/>be-avalon]
+    FE -->|HTTP /api - sensor real-time| NODE[Node bridge<br/>node_mqtt_server]
+    NODE -->|server-to-server x-shared-secret| API
+    NODE <-->|MQTT publish/subscribe| BROKER[MQTT broker]
+    BROKER <--> FW[Firmware perangkat<br/>pompa & sensor]
+    API --> DB[(MySQL)]
+    API --> REDIS[(Redis)]
+    NODE --> REDIS
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Laravel API** — autentikasi JWT (`tymon/jwt-auth`), otorisasi kepemilikan per-user, notifikasi, alarm pompa, endpoint data historis sensor.
+- **Node bridge** — dua proses Express: `serverMonitoring.js` (ingest data sensor MQTT → Laravel + Redis) dan `serverWatering.js` (kontrol pompa: Laravel/UI → MQTT → firmware). Semua endpoint server-to-server dilindungi header `x-shared-secret`.
+- **Frontend** — repositori terpisah: [`fe-avalon`](../fe-avalon/README.md).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Requirements
 
-## Learning Laravel
+| Tool | Versi | Keterangan |
+|---|---|---|
+| PHP | ^8.2 | lihat `composer.json` |
+| Composer | 2.x | |
+| MySQL | 8.x / MariaDB 10.4+ | database utama |
+| Redis | 6.x+ | sesi, cache, data sensor, token device |
+| Node.js | >= 22 | hanya untuk `node_mqtt_server` |
+| MQTT broker | EMQX / Mosquitto | hanya untuk `node_mqtt_server` |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Setup Lokal
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 1. Backend API
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+cd be-avalon
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret        # generate JWT_SECRET untuk .env
+php artisan migrate
+php artisan db:seed           # opsional: RoleSeeder, UserSeeder
+php artisan serve             # http://localhost:8000
+```
 
-## Laravel Sponsors
+Vite (asset) dijalankan terpisah: `npm install && npm run dev` (atau `composer run dev` untuk serve + queue + vite sekaligus).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Node bridge (MQTT)
 
-### Premium Partners
+```bash
+cd be-avalon/node_mqtt_server
+npm install
+# buat file .env (lihat node_mqtt_server/README.md — tidak ada .env.example)
+npm start                     # serverMonitoring.js (monitoring)
+node serverWatering.js        # proses kedua (kontrol pompa) — terminal/jendela terpisah
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+> **Penting:** `SHARED_SECRET` di `.env` Laravel dan `.env` node server **harus sama** — ini dipakai otentikasi server-to-server.
 
-## Contributing
+### 3. Frontend
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cd fe-avalon
+npm install
+cp .env.example .env          # set VITE_API_URL / VITE_NODE_URL
+npm run dev
+```
 
-## Code of Conduct
+## Environment Variables
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Daftar lengkap dari `.env.example`:
 
-## Security Vulnerabilities
+| Variable | Deskripsi |
+|---|---|
+| `APP_NAME` | Nama aplikasi |
+| `APP_ENV` | `local` / `production` / `testing` |
+| `APP_KEY` | Kunci enkripsi Laravel (`php artisan key:generate`) |
+| `APP_DEBUG` | Tampilkan error detail — **wajib `false` di produksi** |
+| `APP_TIMEZONE` | Zona waktu aplikasi |
+| `APP_URL` | URL publik API |
+| `APP_LOCALE` / `APP_FALLBACK_LOCALE` / `APP_FAKER_LOCALE` | Lokalisasi & faker |
+| `APP_MAINTENANCE_DRIVER` | Driver mode maintenance (`file`) |
+| `PHP_CLI_SERVER_WORKERS` | Worker `php artisan serve` |
+| `BCRYPT_ROUNDS` | Cost hashing password (12) |
+| `LOG_CHANNEL` / `LOG_STACK` / `LOG_DEPRECATIONS_CHANNEL` / `LOG_LEVEL` | Konfigurasi logging |
+| `DB_CONNECTION` / `DB_HOST` / `DB_PORT` / `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | Koneksi MySQL |
+| `SESSION_DRIVER` / `SESSION_LIFETIME` / `SESSION_ENCRYPT` / `SESSION_PATH` / `SESSION_DOMAIN` | Sesi (database) |
+| `BROADCAST_CONNECTION` / `FILESYSTEM_DISK` / `QUEUE_CONNECTION` | Driver broadcast/queue/filesystem |
+| `CACHE_STORE` / `CACHE_PREFIX` | Cache (database) |
+| `MEMCACHED_HOST` | Host Memcached (jika dipakai) |
+| `REDIS_CLIENT` / `REDIS_HOST` / `REDIS_PASSWORD` / `REDIS_PORT` / `REDIS_URL` | Koneksi Redis |
+| `MAIL_MAILER` / `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `MAIL_ENCRYPTION` / `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | Email (OTP, notifikasi) |
+| `JWT_SECRET` | Rahasia JWT — generate via `php artisan jwt:secret` |
+| `JWT_TTL` / `JWT_REFRESH_TTL` | Umur token (menit) & refresh TTL |
+| `JWT_ALGO` / `JWT_LEEWAY` | Algoritma & leeway JWT |
+| `JWT_BLACKLIST_ENABLED` / `JWT_BLACKLIST_GRACE_PERIOD` | Blacklist token (logout) |
+| `JWT_PUBLIC_KEY` / `JWT_PRIVATE_KEY` / `JWT_PASSPHRASE` | Key RSA (jika pakai asimetris) |
+| `NODE_API_URL_1` / `NODE_API_URL_2` | URL servis `node_mqtt_server` (dipanggil server-to-server dari controller) |
+| `MQTT_USERNAME` / `MQTT_KEY` | Kredensial broker MQTT (dipakai `node_mqtt_server`) |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Cloudinary — upload QR device |
+| `FRONTEND_URL` | Origin FE yang diizinkan CORS (bisa comma-separated) |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` / `AWS_BUCKET` / `AWS_USE_PATH_STYLE_ENDPOINT` | S3 (jika dipakai) |
+| `VITE_APP_NAME` | Nama app untuk asset Vite |
+| `SHARED_SECRET` | **Secret bersama Laravel ↔ `node_mqtt_server`** — nilai HARUS sama di kedua `.env` |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Perintah Penting
 
-## License
+```bash
+php artisan serve                  # jalankan API lokal
+php artisan test                   # test suite (Pest/PHPUnit)
+php artisan schedule:run           # jalankan scheduler (check:alarms tiap menit)
+php artisan migrate                # jalankan migrasi
+php artisan db:seed                # seed data
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Scheduler produksi: daftarkan `php artisan schedule:run` di cron tiap menit (mis. `* * * * * cd /path/be-avalon && php artisan schedule:run >> /dev/null 2>&1`).
+
+## Deploy (VPS)
+
+1. `php artisan config:cache` aman dijalankan — seluruh konfigurasi sudah memakai `config()` (bukan `env()` langsung di controller), dan `.env.example` sudah lengkap.
+2. **Wajib ter-set di environment produksi:** `APP_KEY`, `APP_DEBUG=false`, `DB_*`, `REDIS_URL`, `JWT_SECRET`, `SHARED_SECRET` (sama dengan node server), `NODE_API_URL_1`/`NODE_API_URL_2`, `FRONTEND_URL`.
+3. Jalankan `php artisan migrate --force` sekali saat deploy.
+4. Aktifkan scheduler via cron tiap menit (lihat "Perintah Penting").
+5. Web server: nginx + PHP-FPM (root `public/`), SSL Let's Encrypt, dan proxy API ke node server jika diperlukan.
+
+## Keamanan
+
+- Semua endpoint kepemilikan data (device, log pompa, alarm, notifikasi, data historis) mengecek ownership via trait `HasOwnershipChecks` — user hanya bisa mengakses resource miliknya.
+- Rate limiting: `throttle:api` (60/menit) global + limiter `auth` (5/menit) untuk login/OTP/forgot-password.
+- Endpoint server-to-server node hanya menerima request dengan header `x-shared-secret` yang cocok.
+- Jangan pernah meng-commit `.env` — file ini ter-gitignore.

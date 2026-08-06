@@ -3,10 +3,37 @@ import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
 import customFetch from '@/utils/customFetch'
 
+// Baca value dari localStorage dengan aman (toleran terhadap JSON korup / akses diblokir)
+const readFromStorage = (key) => {
+    try {
+        const raw = localStorage.getItem(key)
+        if (!raw) return null
+        try {
+            return JSON.parse(raw)
+        } catch {
+            return raw
+        }
+    } catch (error) {
+        console.warn(`Gagal membaca "${key}" dari localStorage:`, error)
+        return null
+    }
+}
+
+const clearStoredSession = () => {
+    try {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+    } catch (error) {
+        console.warn('Gagal membersihkan sesi dari localStorage:', error)
+    }
+}
+
 export const useAuthStore = defineStore('auth', () => {
     const router = useRouter()
-    const tokenUser = ref(null)
-    const currentUser = ref(null)
+
+    // Hydrate state dari localStorage agar sesi bertahan setelah refresh
+    const tokenUser = ref(readFromStorage('token'))
+    const currentUser = ref(readFromStorage('user'))
     const isError = ref(false)
     const errMsg = ref('')
 
@@ -36,7 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (error) {
             isError.value = true;
-            const errors = error.response?.data.error || { message: 'An error occurred' };
+            const data = error.response?.data || {};
+            const errors = data.error || data.message || 'Terjadi kesalahan. Silakan coba lagi.';
 
             if (typeof errors === 'object') {
                 errMsg.value = Object.values(errors)
@@ -72,7 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
             router.push('/verifikasiEmail')
         } catch (error) {
             isError.value = true;
-            const errors = error.response?.data.error || { message: 'An error occurred' };
+            const data = error.response?.data || {};
+            const errors = data.error || data.message || 'Terjadi kesalahan. Silakan coba lagi.';
 
             if (typeof errors === 'object') {
                 errMsg.value = Object.values(errors)
@@ -86,11 +115,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const logoutUser = async () => {
         try {
-            const { data } = await customFetch.post('/auth/logout', null, {
-                headers: {
-                    Authorization: `Bearer ${tokenUser.value}`,
-                }
-            })
+            const { data } = await customFetch.post('/auth/logout')
 
             // PINIA: Reset all state values
             tokenUser.value = null
@@ -109,11 +134,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const getUser = async () => {
         try {
-            const { data } = await customFetch.get('/auth/me', {
-                headers: {
-                    Authorization: `Bearer ${tokenUser.value}`,
-                }
-            })
+            const { data } = await customFetch.get('/auth/me')
 
             const { data: user } = data
 
@@ -122,6 +143,12 @@ export const useAuthStore = defineStore('auth', () => {
 
         } catch (error) {
             console.error(error)
+            // Token expired/invalid → hapus sesi (interceptor 401 sudah redirect ke login)
+            if (error.response?.status === 401) {
+                tokenUser.value = null
+                currentUser.value = null
+                clearStoredSession()
+            }
         }
     }
 

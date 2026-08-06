@@ -15,6 +15,7 @@ use App\Mail\ForgotPasswordMailSend;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
@@ -84,7 +85,10 @@ class AuthController extends Controller
             'otp_code' => 'required|numeric',
         ]);
 
-        $otp = OTP_codes::where('otp_code', $request->otp_code)->first();
+        // Scope OTP ke user pemanggil agar OTP milik user lain tidak bisa dipakai
+        $otp = OTP_codes::where('users_id', auth('api')->user()->users_id)
+            ->where('otp_code', $request->otp_code)
+            ->first();
 
         if (!$otp) {
             return response([
@@ -144,24 +148,16 @@ class AuthController extends Controller
             ->with(['role'])
             ->first();
 
-        // Kirim token ke Node.js
+        // Kirim token ke Node.js — best-effort: login tetap sukses walau node/Redis down
         try {
-            $nodeResponse = Http::post(env('NODE_API_URL_1') . '/api/store-token', [
-                'token' => $token,
-                'users_id' => $user->users_id, // Tambahkan users_id
-            ]);
-
-            if ($nodeResponse->failed()) {
-                return response()->json([
-                    'message' => 'Login berhasil, namun gagal mengirim token ke Node.js.',
-                    'error' => $nodeResponse->body(),
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Login berhasil, namun gagal mengirim token ke Node.js.',
-                'error' => $e->getMessage(),
-            ], 500);
+            Http::timeout(3)->retry(2, 100)
+                ->withHeaders(['x-shared-secret' => config('nodeserver.shared_secret')])
+                ->post(config('nodeserver.url_1') . '/api/store-token', [
+                    'token' => $token,
+                    'users_id' => $user->users_id, // Tambahkan users_id
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim token ke Node.js saat login user ' . $user->users_id . ': ' . $e->getMessage());
         }
 
         // Berikan respons login berhasil

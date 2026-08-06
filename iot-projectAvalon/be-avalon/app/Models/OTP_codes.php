@@ -19,5 +19,6 @@ class OTP_codes extends Model
         'valid_until',
     ];
 
-    public $timestamps = false;
+    // Timestamps aktif sejak migration 2026_08_06_000000 menambahkan kolom
+    // created_at/updated_at (nullable — baris lama tetap kosong).
 }

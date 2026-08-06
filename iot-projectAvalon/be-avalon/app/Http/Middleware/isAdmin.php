@@ -18,6 +18,21 @@ class isAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $currentUser = Auth::guard('api')->user();
+
+        // Null-guard: tanpa ini, user tanpa sesi akan memicu error 500
+        if (!$currentUser) {
+            return response()->json([
+                "message" => "Sesi tidak valid. Silakan login kembali.",
+            ], 401);
+        }
+
+        // Null-guard roles_id: user tanpa role tidak mungkin admin
+        if (!$currentUser->roles_id) {
+            return response()->json([
+                "message" => "Hanya Admin dan Super Admin yang dapat mengakses situs ini",
+            ], 401);
+        }
+
         $roleAdminIds = Role::whereIn('title', ['admin', 'super-admin'])->pluck('roles_id')->toArray();
 
         if (in_array($currentUser->roles_id, $roleAdminIds)) {

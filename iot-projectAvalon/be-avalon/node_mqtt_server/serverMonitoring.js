@@ -5,13 +5,28 @@ const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const cors = require("cors");
 const axios = require("axios");
-const Redis = require("ioredis");
 const schedule = require("node-schedule");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
 const QRCode = require("qrcode");
 
 const cloudinary = require("./cloudinaryConfig");
-const authenticateToken = require("./middleware/authMiddleware");
+const redisClient = require("./redisClient");
+const { authenticateToken, requireSharedSecret } = require("./middleware/authMiddleware");
+
+// Hardening runtime: tangani rejection/exception global agar proses jembatan MQTT
+// tidak mati diam-diam karena satu promise gagal.
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("[ERROR] Unhandled promise rejection:", reason instanceof Error ? reason.stack : reason);
+    // Log + lanjutkan: rejection belum tentu merusak state; state kritis sudah
+    // dilindungi try/catch per-pesan di processQueue.
+});
+
+process.on("uncaughtException", (err) => {
+    console.error("[FATAL] Uncaught exception:", err.stack);
+    // State bisa korup setelah exception tak tertangani — hentikan proses dengan jelas
+    // agar process manager (systemd/PM2) me-restart servis.
+    setImmediate(() => process.exit(1));
+});
 
 // Inisialisasi aplikasi Express
 const app = express();
@@ -20,12 +35,12 @@ const PORT = process.env.PORT_MONITOR || 3000;
 // Middleware
 app.use(bodyParser.json());
 app.use(helmet());
-app.use(cors());
 
-// Konfigurasi Redis
-const redisClient = new Redis(process.env.REDIS_URL);
-redisClient.on("connect", () => console.log("[INFO] Terhubung ke Redis Railway."));
-redisClient.on("error", (err) => console.error("[INFO] Kesalahan Redis Client:", err.message));
+// CORS: pin origin dari env (FRONTEND_URL, boleh comma-separated); default localhost:5173
+const CORS_ORIGINS = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
+    : ["http://localhost:5173"];
+app.use(cors({ origin: CORS_ORIGINS }));
 
 // Konfigurasi MQTT
 const mqttOptions = {
@@ -33,6 +48,15 @@ const mqttOptions = {
     password: process.env.MQTT_KEY,
 };
 const mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL, mqttOptions);
+
+// Konstanta
+const HTTP_TIMEOUT_MS = 8000; // Timeout semua panggilan HTTP ke Laravel
+const MAX_QUEUE_SIZE = 1000; // Cap antrian pesan MQTT
+const MAX_BUFFER_LEN = 100; // Cap nilai per parameter di buffer (cegah memori membengkak)
+const MAX_FLUSH_ATTEMPTS = 5; // Batas percobaan kirim data historis sebelum dead-letter
+const DEVICE_CACHE_TTL_MS = 5 * 60 * 1000; // TTL cache keberadaan device (5 menit)
+const ERROR_CACHE_TTL_MS = 30 * 1000; // TTL cache pendek saat pengecekan gagal (Laravel down)
+const DEVICE_STATE_TTL_MS = 10 * 60 * 1000; // TTL state per-device (10 menit)
 
 // Fungsi untuk mengirim token ke Redis
 async function storeUserToken(users_id, token) {
@@ -80,19 +104,51 @@ async function uploadQRCodeToCloudinary(qrCodeDataURL, deviceId) {
     }
 }
 
-// Fungsi untuk memeriksa apakah perangkat sudah ada di Laravel
+// Cache hasil pengecekan device di memori (per proses) agar tidak HTTP ke Laravel per pesan MQTT.
+// Key: deviceId, value: { known: boolean|null, checkedAt: number, ttlMs: number }
+// known: true = terdaftar, false = 404, null = pengecekan gagal (Laravel down) — jangan registrasi.
+const deviceKnownCache = new Map();
+
+function setDeviceKnown(deviceId, known, ttlMs = DEVICE_CACHE_TTL_MS) {
+    deviceKnownCache.set(deviceId, { known, checkedAt: Date.now(), ttlMs });
+}
+
+// Mengembalikan nilai cache jika masih fresh, null jika belum ada/kadaluwarsa
+function getCachedDeviceKnown(deviceId) {
+    const entry = deviceKnownCache.get(deviceId);
+    if (!entry) return null;
+    if (Date.now() - entry.checkedAt > entry.ttlMs) {
+        deviceKnownCache.delete(deviceId);
+        return null;
+    }
+    return entry.known;
+}
+
+// Fungsi untuk memeriksa apakah perangkat sudah ada di Laravel (dengan cache TTL)
 async function checkDeviceExist(deviceId) {
+    const cached = getCachedDeviceKnown(deviceId);
+    if (cached !== null) {
+        return cached;
+    }
+
     try {
-        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-public/${deviceId}`);
+        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-public/${deviceId}`, {
+            timeout: HTTP_TIMEOUT_MS,
+        });
         if (response.data.status === "success") {
+            setDeviceKnown(deviceId, true);
             return true;
         }
+        return false;
     } catch (error) {
         if (error.response && error.response.status === 404) {
             console.log(`[ERROR] Perangkat dengan Device ID ${deviceId} belum ada.`);
+            setDeviceKnown(deviceId, false);
             return false;
         }
         console.error("[ERROR] Gagal memeriksa perangkat di Laravel:", error.message);
+        // Cache pendek hasil gagal agar tidak menghajar Laravel per pesan saat down
+        setDeviceKnown(deviceId, null, ERROR_CACHE_TTL_MS);
         throw error;
     }
 }
@@ -100,11 +156,15 @@ async function checkDeviceExist(deviceId) {
 // Fungsi untuk menyimpan perangkat ke Laravel jika belum ada
 async function saveDeviceToLaravel(deviceId, deviceType, qrCodeUrl) {
     try {
-        const response = await axios.post(`${process.env.LARAVEL_API_URL}/device`, {
-            devices_id: deviceId,
-            device_type: deviceType,
-            qrcode_url: qrCodeUrl,
-        });
+        await axios.post(
+            `${process.env.LARAVEL_API_URL}/device`,
+            {
+                devices_id: deviceId,
+                device_type: deviceType,
+                qrcode_url: qrCodeUrl,
+            },
+            { timeout: HTTP_TIMEOUT_MS }
+        );
         console.log(`[POST] Perangkat berhasil disimpan ke Laravel: ${deviceId}`);
     } catch (error) {
         console.error("[ERROR] Gagal menyimpan perangkat ke Laravel:", error.message);
@@ -117,9 +177,15 @@ async function handleDevice(deviceId, deviceType) {
     try {
         // Langkah 1: Periksa apakah perangkat sudah ada
         const deviceExist = await checkDeviceExist(deviceId);
-        if (deviceExist) {
+        if (deviceExist === true) {
             console.log(`[INFO] Perangkat sudah ada: ${deviceId}`);
             return; // Keluar jika perangkat sudah ada
+        }
+
+        if (deviceExist === null) {
+            // Pengecekan gagal (mis. Laravel down) — jangan lanjut registrasi, retry di pesan berikutnya
+            console.log(`[WARNING] Pengecekan device ${deviceId} gagal. Registrasi ditunda.`);
+            return;
         }
 
         // Langkah 2: Generate QR Code jika perangkat belum ada
@@ -130,6 +196,9 @@ async function handleDevice(deviceId, deviceType) {
 
         // Langkah 4: Simpan perangkat ke Laravel
         await saveDeviceToLaravel(deviceId, deviceType, qrCodeUrl);
+
+        // Force refresh cache: perangkat baru saja terdaftar
+        setDeviceKnown(deviceId, true);
 
         console.log("[INFO] Proses selesai. QR Code URL:", qrCodeUrl);
     } catch (error) {
@@ -158,8 +227,9 @@ async function saveToRedis(parameter, value, deviceId) {
     }
 }
 
-// Buffer untuk menampung data sementara
-const dataBuffer = {};
+// Buffer per-device untuk menampung data sementara (Map keyed by deviceId —
+// juga mencegah prototype pollution lewat payload device id)
+const dataBuffer = new Map();
 
 // Fungsi untuk menghitung rata-rata
 function calculateAverages(buffer) {
@@ -178,46 +248,98 @@ function calculateAverages(buffer) {
     return averages;
 }
 
-// Fungsi untuk mengirim data ke Laravel
+// Fungsi untuk mengirim data ke Laravel (melempar error agar caller bisa retry)
 async function sendDataToLaravel(historyId, averages, deviceId) {
     try {
-        const response = await axios.post(`${process.env.LARAVEL_API_URL}/historical-data`, {
-            history_id: historyId,
-            parameters: averages,
-            devices_id: deviceId,
-        });
+        await axios.post(
+            `${process.env.LARAVEL_API_URL}/historical-data`,
+            {
+                history_id: historyId,
+                parameters: averages,
+                devices_id: deviceId,
+            },
+            { timeout: HTTP_TIMEOUT_MS }
+        );
 
         console.log(`[POST] Data berhasil dikirim ke Laravel untuk Device ID ${deviceId}`);
     } catch (error) {
         console.error(`[ERROR] Gagal mengirim data ke Laravel untuk Device ID ${deviceId}: ${error.response?.data?.message || error.message}`);
-        console.error(`[DETAIL] Response Data: ${JSON.stringify(error.response?.data || {})}`);
+        throw error;
     }
 }
+
+// historyId yang sedang "in-flight" per device: dipertahankan saat retry agar jika
+// attempt sebelumnya sukses tapi respons hilang, Laravel menolak duplikat
+// (constraint unique history_id) dan kita bisa reset buffer tanpa membuat baris ganda.
+const pendingFlush = new Map(); // key: deviceId, value: { historyId, attempts }
 
 // Scheduler untuk memproses data rata-rata setiap 5 menit
 schedule.scheduleJob("*/5 * * * *", async () => {
     console.log("[INFO] Scheduler mulai untuk memproses data rata-rata.");
-    for (const deviceId in dataBuffer) {
-        const averages = calculateAverages(dataBuffer[deviceId]);
-        const historyId = uuidv4();
-        try {
-            await sendDataToLaravel(historyId, averages, deviceId);
-            console.log(`[POST] Data rata-rata untuk Device ID ${deviceId} berhasil dikirim ke Laravel.`);
-        } catch (error) {
-            console.error(`[ERROR] Gagal mengirim data (Historical) rata-rata untuk Device ID ${deviceId}: ${error.message}`);
+    try {
+        for (const [deviceId, buffer] of dataBuffer.entries()) {
+            const hasData = Object.values(buffer).some((values) => values.length > 0);
+            if (!hasData) {
+                console.log(`[INFO] Tidak ada data baru untuk Device ID ${deviceId}, dilewati.`);
+                continue;
+            }
+
+            const averages = calculateAverages(buffer);
+            const pending = pendingFlush.get(deviceId) || { historyId: randomUUID(), attempts: 0 };
+            pendingFlush.set(deviceId, pending);
+
+            try {
+                await sendDataToLaravel(pending.historyId, averages, deviceId);
+                // Reset buffer HANYA setelah sukses
+                dataBuffer.delete(deviceId);
+                pendingFlush.delete(deviceId);
+                console.log(`[POST] Data rata-rata untuk Device ID ${deviceId} berhasil dikirim ke Laravel.`);
+            } catch (error) {
+                // 422 pada field history_id = attempt sebelumnya sukses tapi respons hilang
+                const duplicateHistory = error.response?.status === 422 && error.response.data?.errors?.history_id;
+                if (duplicateHistory) {
+                    console.warn(`[WARNING] Data Device ID ${deviceId} sudah tersimpan (history_id duplikat), buffer di-reset.`);
+                    dataBuffer.delete(deviceId);
+                    pendingFlush.delete(deviceId);
+                    continue;
+                }
+
+                pending.attempts += 1;
+                if (pending.attempts >= MAX_FLUSH_ATTEMPTS) {
+                    // Dead-letter: log isi data lalu buang, agar buffer tidak membengkak selamanya
+                    console.error(`[ERROR] [DEAD-LETTER] Data Device ID ${deviceId} gagal dikirim ${MAX_FLUSH_ATTEMPTS} kali, dibuang:`, JSON.stringify(averages));
+                    dataBuffer.delete(deviceId);
+                    pendingFlush.delete(deviceId);
+                } else {
+                    console.error(`[ERROR] Gagal mengirim data (Historical) rata-rata untuk Device ID ${deviceId} (percobaan ke-${pending.attempts}/${MAX_FLUSH_ATTEMPTS}). Buffer dipertahankan untuk retry.`);
+                }
+            }
         }
 
-        // Reset buffer setelah data diproses
-        dataBuffer[deviceId] = { temperature: [], humidity: [], soil_moisture: [] };
+        // Bersihkan state per-device yang sudah lama tidak terlihat
+        const now = Date.now();
+        for (const [deviceId, state] of deviceState.entries()) {
+            if (now - state.lastSeenAt > DEVICE_STATE_TTL_MS) {
+                deviceState.delete(deviceId);
+            }
+        }
+    } catch (error) {
+        console.error("[ERROR] Scheduler gagal memproses data rata-rata:", error.message);
     }
     console.log("[INFO] Scheduler selesai memproses data rata-rata.");
 });
 
-let currentDeviceId = null;
-let currentDeviceType = null;
+// State per-device (Map keyed by deviceId) — pengganti variabel global agar device
+// yang publish bersamaan tidak saling menimpa state.
+// CATATAN: topik MQTT tidak membawa device id per pesan, jadi pesan sensor tetap
+// dipetakan ke device yang terakhir mengumumkan device-id (batasan protokol; perbaikan
+// penuh butuh sinkron firmware agar device id ikut dalam payload/topic).
+const deviceState = new Map(); // key: deviceId, value: { deviceType, lastSeenAt }
+let activeDeviceId = null;
 
 let messageQueue = []; // Antrian untuk pesan MQTT
 let isProcessingQueue = false; // Flag untuk memproses pesan
+let droppedMessageCount = 0; // Hitung pesan yang dibuang karena antrian penuh
 
 const validFeeds = ["proto-one-monitoring-1.device-id", "proto-one-monitoring-1.device-type", "proto-one-monitoring-1.temperature",
     "proto-one-monitoring-1.humidity", "proto-one-monitoring-1.soil-moisture",];
@@ -237,53 +359,78 @@ async function processQueue() {
     try {
         while (messageQueue.length > 0) {
             const { topic, message } = messageQueue.shift();
-            const payload = message.toString().trim();
 
-            console.log(`[INFO] Pesan diterima. Topik: ${topic}, Payload: ${payload}`);
+            try {
+                const payload = message.toString().trim();
 
-            // Parsing nama feed dari topik
-            const feedType = topic.split("/").pop(); // Ambil bagian terakhir dari topik
+                console.log(`[INFO] Pesan diterima. Topik: ${topic}, Payload: ${payload}`);
 
-            // Filter hanya topik yang valid
-            if (!validFeeds.includes(feedType)) {
-                console.log(`[WARNING] Topik tidak dikenal: ${feedType}`);
-                continue;
-            }
+                // Parsing nama feed dari topik
+                const feedType = topic.split("/").pop(); // Ambil bagian terakhir dari topik
 
-            switch (feedType) {
-                case "proto-one-monitoring-1.device-id":
-                    currentDeviceId = payload;
-                    console.log(`[GET] Device ID diterima: ${currentDeviceId}`);
-                    break;
+                // Filter hanya topik yang valid
+                if (!validFeeds.includes(feedType)) {
+                    console.log(`[WARNING] Topik tidak dikenal: ${feedType}`);
+                    continue;
+                }
 
-                case "proto-one-monitoring-1.device-type":
-                    currentDeviceType = payload;
-                    console.log(`[GET] Tipe perangkat diterima: ${currentDeviceType}`);
-                    break;
-
-                case "proto-one-monitoring-1.temperature":
-                case "proto-one-monitoring-1.humidity":
-                case "proto-one-monitoring-1.soil-moisture":
-                    if (currentDeviceId) {
-                        await saveToRedis(feedType, payload, currentDeviceId);
-
-                        if (!dataBuffer[currentDeviceId]) {
-                            dataBuffer[currentDeviceId] = { temperature: [], humidity: [], soil_moisture: [] };
+                switch (feedType) {
+                    case "proto-one-monitoring-1.device-id":
+                        activeDeviceId = payload;
+                        if (!deviceState.has(payload)) {
+                            deviceState.set(payload, { deviceType: null, lastSeenAt: Date.now() });
+                        } else {
+                            deviceState.get(payload).lastSeenAt = Date.now();
                         }
+                        console.log(`[GET] Device ID diterima: ${activeDeviceId}`);
+                        break;
 
-                        const bufferKey = bufferKeyMap[feedType];
-                        if (bufferKey) {
-                            dataBuffer[currentDeviceId][bufferKey].push(payload);
-                            console.log(`[POST] Data ${bufferKey} diproses ke Buffer untuk Device ID ${currentDeviceId}: ${payload}`);
+                    case "proto-one-monitoring-1.device-type":
+                        if (activeDeviceId && deviceState.has(activeDeviceId)) {
+                            deviceState.get(activeDeviceId).deviceType = payload;
+                            console.log(`[GET] Tipe perangkat diterima: ${payload} (Device ID ${activeDeviceId})`);
+                        } else {
+                            console.log("[WARNING] Tipe perangkat diterima sebelum Device ID diketahui. Diabaikan.");
                         }
-                    } else {
-                        console.log("[WARNING] Device ID belum tersedia. Data diabaikan.");
+                        break;
+
+                    case "proto-one-monitoring-1.temperature":
+                    case "proto-one-monitoring-1.humidity":
+                    case "proto-one-monitoring-1.soil-moisture":
+                        if (activeDeviceId) {
+                            await saveToRedis(feedType, payload, activeDeviceId);
+
+                            if (!dataBuffer.has(activeDeviceId)) {
+                                dataBuffer.set(activeDeviceId, { temperature: [], humidity: [], soil_moisture: [] });
+                            }
+
+                            const bufferKey = bufferKeyMap[feedType];
+                            if (bufferKey) {
+                                const buffer = dataBuffer.get(activeDeviceId);
+                                buffer[bufferKey].push(payload);
+                                if (buffer[bufferKey].length > MAX_BUFFER_LEN) {
+                                    buffer[bufferKey].shift();
+                                }
+                                console.log(`[POST] Data ${bufferKey} diproses ke Buffer untuk Device ID ${activeDeviceId}: ${payload}`);
+                            }
+                        } else {
+                            console.log("[WARNING] Device ID belum tersedia. Data diabaikan.");
+                        }
+                        break;
+                }
+
+                // Daftarkan perangkat baru bila tipe sudah diketahui dan keberadaannya
+                // belum terkonfirmasi (cache). Setelah terkonfirmasi, tidak ada lagi HTTP
+                // ke Laravel per pesan.
+                if (activeDeviceId) {
+                    const state = deviceState.get(activeDeviceId);
+                    if (state && state.deviceType && getCachedDeviceKnown(activeDeviceId) !== true) {
+                        await handleDevice(activeDeviceId, state.deviceType);
                     }
-                    break;
-            }
-
-            if (currentDeviceId && currentDeviceType) {
-                await handleDevice(currentDeviceId, currentDeviceType);
+                }
+            } catch (error) {
+                // Satu pesan gagal tidak boleh menghentikan pemrosesan pesan lainnya
+                console.error(`[ERROR] Gagal memproses pesan dari topik ${topic}:`, error.message);
             }
         }
     } finally {
@@ -308,8 +455,17 @@ mqttClient.on("connect", () => {
 
 // Event untuk menerima pesan
 mqttClient.on("message", (topic, message) => {
+    // Cap antrian: drop pesan tertua bila penuh, hitung counter
+    if (messageQueue.length >= MAX_QUEUE_SIZE) {
+        messageQueue.shift();
+        droppedMessageCount += 1;
+        console.warn(`[WARNING] Antrian penuh (${MAX_QUEUE_SIZE}). Pesan tertua dibuang. Total dibuang: ${droppedMessageCount}`);
+    }
     messageQueue.push({ topic, message }); // Tambahkan pesan ke antrian
-    processQueue(); // Mulai memproses antrian
+    processQueue().catch((error) => {
+        // Jaga-jaga bila processQueue melempar di luar try/finally
+        console.error("[ERROR] Gagal memproses antrian pesan:", error.message);
+    });
 });
 
 mqttClient.on("error", (error) => {
@@ -324,8 +480,8 @@ mqttClient.on("reconnect", () => {
     console.log("[INFO] Menghubungkan ulang ke broker MQTT...");
 });
 
-// Endpoint untuk menyimpan token JWT
-app.post("/api/store-token", async (req, res) => {
+// Endpoint untuk menyimpan token JWT (server-to-server dari Laravel)
+app.post("/api/store-token", requireSharedSecret, async (req, res) => {
     const { token, users_id } = req.body;
 
     if (!token || !users_id) {
@@ -336,7 +492,8 @@ app.post("/api/store-token", async (req, res) => {
         const result = await storeUserToken(users_id, token);
         res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("[ERROR] Gagal menyimpan token:", error.message);
+        res.status(500).json({ message: "Gagal menyimpan token." });
     }
 });
 
@@ -368,6 +525,7 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
+            timeout: HTTP_TIMEOUT_MS,
         });
 
         if (
@@ -410,15 +568,15 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
             data: parsedData,
         });
     } catch (error) {
+        // Detail error hanya untuk log server — jangan bocorkan ke klien
         console.error(`Kesalahan saat memproses data dashboard untuk Device ID ${deviceId}:`, error.message);
         res.status(500).json({
             message: "Kesalahan server saat memproses permintaan.",
-            error: error.message,
         });
     }
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`[INFO] Server berjalan di https://arcadia-nodeserver-monitoring-development.up.railway.app:${PORT}`);
+    console.log(`[INFO] serverMonitoring berjalan di port ${PORT}`);
 });
