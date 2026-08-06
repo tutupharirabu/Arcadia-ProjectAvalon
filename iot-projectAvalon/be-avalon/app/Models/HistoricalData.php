@@ -48,6 +48,8 @@ class HistoricalData extends Model
 
     /**
      * Relasi ke tabel Devices.
+     *
+     * @return BelongsTo<Device, $this>
      */
     public function device()
     {

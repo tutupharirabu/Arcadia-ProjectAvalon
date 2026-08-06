@@ -4,7 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Role;
 use Illuminate\Http\Request;
-use App\Http\Middleware\isAdmin;
 use App\Http\Controllers\Controller;
 
 class RoleController extends Controller

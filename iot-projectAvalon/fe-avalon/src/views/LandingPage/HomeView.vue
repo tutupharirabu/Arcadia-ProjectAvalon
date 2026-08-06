@@ -51,12 +51,12 @@
 
 
         <!-- Gambar Visi -->
-        <div class="flex justify-center hidden md:flex ">
+        <div class="justify-center max-md:hidden md:flex">
           <img src="@/assets/visi.png" alt="Visi Image" class="custom-imageVisi">
         </div>
 
         <!-- Gambar Misi -->
-        <div class="flex justify-center hidden md:flex mt-12">
+        <div class="justify-center max-md:hidden md:flex mt-12">
           <img src="@/assets/misi.png" alt="Misi Image" class="custom-imageMisi">
         </div>
 
@@ -183,6 +183,7 @@ export default {
 <style scoped>
 .text-gradient {
   background: linear-gradient(to right, #ff7e5f, #fc819e);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
