@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.5.4",
     "cypress": "^15.20.0",
     "daisyui": "^4.12.22",
     "postcss": "^8.4.48",
