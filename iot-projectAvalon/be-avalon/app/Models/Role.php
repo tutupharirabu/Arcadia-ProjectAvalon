@@ -19,6 +19,11 @@ class Role extends Model
         'title',
     ];
 
+    /**
+     * Relasi ke User yang memiliki role ini.
+     *
+     * @return HasMany<User, $this>
+     */
     public function list_user()
     {
         return $this->hasMany(User::class, 'roles_id', 'roles_id');
@@ -26,6 +31,8 @@ class Role extends Model
 
     /**
      * Relasi ke tabel notification_recipients (notifikasi yang diterima oleh role ini).
+     *
+     * @return HasMany<NotificationRecipient, $this>
      */
     public function notifications()
     {
