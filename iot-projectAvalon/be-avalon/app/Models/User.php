@@ -10,16 +10,24 @@ use App\Models\Notification;
 use App\Models\NotificationRecipient;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasUuids;
 
-    public static function boot()
+    /**
+     * Register boot hooks untuk model User.
+     *
+     * @return void
+     */
+    public static function boot(): void
     {
         parent::boot();
 
@@ -28,7 +36,13 @@ class User extends Authenticatable implements JWTSubject
         });
     }
 
-    public function generateOtpCodeData($user)
+    /**
+     * Membuat kode OTP untuk user dan menyimpannya ke tabel OTP_codes.
+     *
+     * @param User $user
+     * @return void
+     */
+    public function generateOtpCodeData($user): void
     {
         $randomNumber = mt_rand(100000, 999999);
         $now = Carbon::now();
@@ -79,35 +93,57 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
+    /**
+     * @return mixed
+     */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims()
+    /**
+     * @return array
+     */
+    public function getJWTCustomClaims(): array
     {
         return [];
     }
 
-    public function role()
+    /**
+     * Relasi ke Role yang dimiliki user.
+     *
+     * @return BelongsTo<Role, $this>
+     */
+    public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'roles_id');
     }
 
-    public function otpCode()
+    /**
+     * Relasi ke kode OTP milik user.
+     *
+     * @return HasOne<OTP_codes, $this>
+     */
+    public function otpCode(): HasOne
     {
         return $this->hasOne(OTP_codes::class, 'users_id');
     }
 
     // Relasi ke notifikasi yang dikirim oleh pengguna (kolom aktual: notifications.admin_id)
-    public function sentNotifications()
+    /**
+     * @return HasMany<Notification, $this>
+     */
+    public function sentNotifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'admin_id', 'users_id');
     }
 
     // Relasi ke notifikasi yang diterima oleh pengguna
     // (melalui notification_recipients, di-scope ke users_id penerima)
-    public function receivedNotifications()
+    /**
+     * @return HasManyThrough<Notification, NotificationRecipient, $this>
+     */
+    public function receivedNotifications(): HasManyThrough
     {
         return $this->hasManyThrough(
             Notification::class,
