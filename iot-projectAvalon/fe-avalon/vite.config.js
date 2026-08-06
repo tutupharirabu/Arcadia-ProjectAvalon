@@ -2,7 +2,10 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+
+// Catatan: vite-plugin-vue-devtools sengaja TIDAK dipakai — @vue/devtools-kit-nya
+// melempar unhandled rejection di Cypress component test. DevTools browser
+// tetap bisa dipakai via extension browser (tanpa plugin).
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,7 +14,6 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    vueDevTools(),
   ],
   resolve: {
     alias: {

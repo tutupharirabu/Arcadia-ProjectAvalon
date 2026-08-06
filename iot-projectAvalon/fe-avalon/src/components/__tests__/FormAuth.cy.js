@@ -5,14 +5,13 @@ import { OhVueIcon } from 'oh-vue-icons'
 
 import FormAuth from '../Login-Register/FormAuth.vue'
 
-const pinia = createPinia()
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [{ path: '/', component: { template: '<div />' } }],
-})
-
+// Pinia & router dibuat FRESH per mount agar state tidak carry-over antar test
 const mountFormAuth = (isRegister) => {
+  const pinia = createPinia()
+  const router = createRouter({
+    history: createWebHistory(),
+    routes: [{ path: '/', component: { template: '<div />' } }],
+  })
   cy.mount(FormAuth, {
     props: { isRegister },
     global: {
