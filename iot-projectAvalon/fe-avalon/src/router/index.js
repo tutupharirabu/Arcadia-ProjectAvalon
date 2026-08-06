@@ -6,11 +6,13 @@ import LandingPageLayout from '@/views/LandingPage/LandingPageLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: () => ({ top: 0 }),
   routes: [
     // Landing Page Routes
     {
       path: '/',
       component: LandingPageLayout,
+      redirect: '/beranda',
       children: [
         {
           path: 'beranda',
@@ -114,13 +116,17 @@ const router = createRouter({
       path: '/forgot-password/verifikasiOTP',
       name: 'OTPForgotPassword',
       component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/VerifOTPForgotPass.vue'),
-      meta: { forgotPass: true },
     },
     {
       path: '/forgot-password/resetPassword',
       name: 'ResetPassword',
       component: () => import('@/views/DashboardPetani/Login-Register/ForgotPassword/SubmitPass.vue'),
-      meta: { forgotPass: true },
+    },
+
+    // Fallback: halaman tidak ditemukan
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/beranda',
     },
   ]
 })
@@ -130,27 +136,14 @@ router.beforeEach((to, from, next) => {
 
   // Cek halaman yang membutuhkan autentikasi
   if (to.meta.isAuth && !authStore.tokenUser) {
-    alert('Kamu tidak punya akses ke halaman ini!');
-    next('/monitoring-arcadia/login'); // Gunakan next() dengan path tujuan
+    next({ path: '/monitoring-arcadia/login', query: { error: 'auth-required' } });
     return; // Pastikan keluar dari fungsi
   }
 
   // Cek halaman dashboard petani
   if (to.meta.isPetani && (!authStore.tokenUser || authStore?.currentUser?.role !== 'Petani')) {
-    alert('Kamu tidak punya akses ke halaman dashboard petani ini!');
-    next('/beranda');
+    next({ path: '/monitoring-arcadia/login', query: { error: 'petani-required' } });
     return;
-  }
-
-  // Cek halaman forgot-password dengan flag di localStorage
-  if (to.meta.forgotPass) {
-    const accessedForgotPassword = localStorage.getItem('accessForgotPassword');
-
-    if (!accessedForgotPassword) {
-      // Redirect ke '/forgot-password' jika flag tidak ditemukan
-      next({ name: 'forgotPassword' });
-      return;
-    }
   }
 
   next(); // Lanjutkan ke halaman tujuan jika semua kondisi lolos

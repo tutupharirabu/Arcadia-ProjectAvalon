@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ForgotPasswordMainSend extends Mailable
+class ForgotPasswordMailSend extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -32,7 +32,7 @@ class ForgotPasswordMainSend extends Mailable
     {
         return new Envelope(
             subject: 'Arcadia - Forgot Password',
-            from: new Address(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME')),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 
@@ -42,7 +42,7 @@ class ForgotPasswordMainSend extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.forgotPasswordMail',
+            view: 'Mail.forgotPasswordMail',
             with: [
                 'name' => $this->user->name,
                 'otp' => $this->user->otpCode->otp_code,

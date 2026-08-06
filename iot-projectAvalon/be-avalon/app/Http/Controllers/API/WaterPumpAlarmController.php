@@ -4,13 +4,17 @@ namespace App\Http\Controllers\API;
 
 use App\Models\WaterPumpLog;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Models\WaterPumpAlarm;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\API\WaterPumpController;
+use App\Http\Controllers\API\Traits\HasOwnershipChecks;
 
 class WaterPumpAlarmController extends Controller
 {
+    use HasOwnershipChecks;
 
     protected $waterPumpController;
 
@@ -24,6 +28,12 @@ class WaterPumpAlarmController extends Controller
         $request->validate([
             'devices_id' => 'required'
         ]);
+
+        // Pastikan perangkat milik pemanggil (cegah IDOR)
+        $device = $this->ensureDeviceOwnedByUser($request->devices_id);
+        if ($device instanceof JsonResponse) {
+            return $device;
+        }
 
         return WaterPumpAlarm::where('devices_id', $request->devices_id)
             ->orderBy('start_time', 'desc')
@@ -43,9 +53,10 @@ class WaterPumpAlarmController extends Controller
             'date' => 'Format :attribute harus berupa tanggal yang valid!'
         ]);
 
-        // Cek device ID
-        if (!$request->devices_id) {
-            return response(['message' => 'Unauthorized'], 401);
+        // Pastikan perangkat milik pemanggil (cegah IDOR)
+        $device = $this->ensureDeviceOwnedByUser($request->devices_id);
+        if ($device instanceof JsonResponse) {
+            return $device;
         }
 
         // Update atau Create alarm
@@ -81,15 +92,23 @@ class WaterPumpAlarmController extends Controller
         ], 200);
     }
 
-    public function destroy(Request $request, WaterPumpAlarm $waterPumpAlarm)
+    public function destroy(Request $request, $id)
     {
-        if ($request->devices_id != $waterPumpAlarm->devices_id) {
+        $alarm = WaterPumpAlarm::where('water_pump_alarm_id', $id)->first();
+
+        if (!$alarm) {
             return response()->json([
-                'message' => 'Unauthorized'
-            ], 403);
+                'message' => 'Alarm tidak ditemukan.'
+            ], 404);
         }
 
-        $waterPumpAlarm->delete();
+        // Pastikan perangkat pemilik alarm adalah milik pemanggil (cegah IDOR)
+        $device = $this->ensureDeviceOwnedByUser($alarm->devices_id);
+        if ($device instanceof JsonResponse) {
+            return $device;
+        }
+
+        $alarm->delete();
         return response()->noContent();
     }
 
@@ -151,9 +170,10 @@ class WaterPumpAlarmController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Gagal menjalankan pemeriksaan alarm: ' . $e->getMessage());
+
             return response()->json([
-                'message' => 'Terjadi kesalahan saat menjalankan alarm',
-                'error' => $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menjalankan alarm'
             ], 500);
         }
     }

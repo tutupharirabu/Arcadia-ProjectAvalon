@@ -9,10 +9,10 @@
         <!-- Daftar perangkat -->
         <div v-else-if="devices.length > 0" class="grid grid-cols-1 gap-6">
             <div v-for="(device) in devices" :key="device.deviceId"
-                class="bg-accent text-on-secondary shadow-lg rounded-lg p-4 border border-neutral relative">
+                class="bg-accent text-accent-content shadow-lg rounded-lg p-4 border border-neutral relative">
                 <!-- Informasi Perangkat -->
                 <div class="mb-4">
-                    <h3 class="text-xl font-semibold text-secondary-content">{{ device.deviceName }}</h3>
+                    <h3 class="text-xl font-semibold text-accent-content">{{ device.deviceName }}</h3>
                     <p class="text-md"><strong>Type:</strong> {{ device.deviceType }}</p>
                     <p class="text-md">
                         <strong>Status:</strong>
@@ -73,15 +73,16 @@
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Aksi Alat"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" @click.self="closeModal">
         <!-- Modal Content -->
         <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-sm">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
             <span v-if="modalTitle === 'Proses Berhasil'"
                 class="loading loading-spinner loading-lg text-primary mt-4"></span>
-            <!-- Tombol hanya ditampilkan jika ada error -->
-            <button v-if="modalTitle === 'Proses Gagal'" @click="showModal = false" class="btn btn-primary mt-4">
+            <!-- Tombol OK selalu tersedia agar modal bisa ditutup manual -->
+            <button @click="closeModal" class="btn btn-primary mt-4">
                 OK
             </button>
         </div>
@@ -108,21 +109,23 @@ const showModal = ref(false);
 const modalTitle = ref("");
 const modalMessage = ref("");
 
-// Polling interval state
-let pollingInterval = null;
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
+
+// Polling state
+const BASE_INTERVAL = 5000; // Polling normal setiap 5 detik
+const MAX_INTERVAL = 60000; // Batas atas backoff (1 menit)
+let pollTimer = null;
+let currentInterval = BASE_INTERVAL;
+let consecutiveErrors = 0;
 
 // Pompa Air state
-const loadingPumpControl = ref({}); // Loader untuk tombol penyiraman
+const loadingPumpControl = ref({}); // Loader untuk penyiraman
 
 // Fetch daftar perangkat
 const fetchDevices = async () => {
     try {
         const userId = AuthStore.currentUser.id;
-        const response = await customFetch.get(`/device/check-by-user/${userId}`, {
-            headers: {
-                Authorization: `Bearer ${AuthStore.tokenUser}`,
-            },
-        });
+        const response = await customFetch.get(`/device/check-by-user/${userId}`);
 
         devices.value = response.data.data.map((device) => ({
             deviceId: device.devices_id,
@@ -136,10 +139,13 @@ const fetchDevices = async () => {
         if (showModal.value) {
             showModal.value = false; // Modal ditutup otomatis
         }
+
+        return true;
     } catch (error) {
         showModal.value = true;
         modalTitle.value = "Error";
         modalMessage.value = "Gagal mengambil daftar perangkat.";
+        return false;
     } finally {
         isLoading.value = false; // Matikan loader
     }
@@ -156,15 +162,18 @@ const goToDetail = (deviceId, deviceType) => {
     }
 };
 
+// Tutup modal secara manual
+const closeModal = () => {
+    showModal.value = false;
+    lastFocusedElement?.focus?.();
+};
+
 // Fungsi untuk memutuskan perangkat
 const unlinkDevice = async (deviceId) => {
     loadingUnlink.value[deviceId] = true; // Aktifkan loader
     try {
-        const response = await customFetch.delete(`/device/unlink/${deviceId}`, {
-            headers: {
-                Authorization: `Bearer ${useAuthStore().tokenUser}`,
-            },
-        });
+        lastFocusedElement = document.activeElement;
+        const response = await customFetch.delete(`/device/unlink/${deviceId}`);
 
         if (response.data.status === "success") {
             modalTitle.value = "Proses Berhasil";
@@ -186,11 +195,12 @@ const unlinkDevice = async (deviceId) => {
 const toggleDevice = async (deviceId, newStatus) => {
     loadingStatus.value[deviceId] = true; // Aktifkan loader per device
     try {
-        // Kirim permintaan update status ke API
+        lastFocusedElement = document.activeElement;
+
+        // Kirim permintaan update status ke API (Authorization di-inject interceptor)
         await customFetch.post(
             `/device/${deviceId}?_method=PUT`,
-            { status: newStatus },
-            { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
+            { status: newStatus }
         );
 
         // Tampilkan pesan berhasil
@@ -218,6 +228,8 @@ const togglePump = async (device) => {
     loadingPumpControl.value[device.deviceId] = true; // Aktifkan loader
 
     try {
+        lastFocusedElement = document.activeElement;
+
         // Pastikan waterPumpData ada sebelum mencarinya
         if (!device.waterPumpData || !Array.isArray(device.waterPumpData)) {
             console.error("Data waterPumpData tidak ditemukan atau tidak valid untuk perangkat ini.");
@@ -254,12 +266,7 @@ const togglePump = async (device) => {
 
         const response = await customFetch.post(
             "/water-pump/control",
-            requestBody,
-            {
-                headers: {
-                    Authorization: `Bearer ${AuthStore.tokenUser}`,
-                },
-            }
+            requestBody
         );
 
         if (response.status === 200) {
@@ -293,19 +300,61 @@ const togglePump = async (device) => {
     }
 };
 
-// Fungsi polling untuk memperbarui data setiap beberapa detik
-const startPolling = () => {
-    pollingInterval = setInterval(fetchDevices, 5000); // Refresh setiap 5 detik
+// ---- Polling dengan visibility pause + exponential backoff ----
+
+const scheduleNextPoll = () => {
+    if (pollTimer) clearTimeout(pollTimer);
+    // Jangan jadwalkan saat tab tersembunyi (visibilitychange akan menjadwalkan ulang)
+    if (document.visibilityState !== "visible") return;
+    pollTimer = setTimeout(runPoll, currentInterval);
 };
 
-// Cleanup polling saat komponen di-unmount
-onUnmounted(() => {
-    if (pollingInterval) clearInterval(pollingInterval);
+const runPoll = async () => {
+    if (document.visibilityState !== "visible") return;
+
+    const success = await fetchDevices();
+
+    // Exponential backoff: interval naik 2x saat error, reset saat sukses
+    if (success) {
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+    } else {
+        consecutiveErrors += 1;
+        currentInterval = Math.min(BASE_INTERVAL * 2 ** consecutiveErrors, MAX_INTERVAL);
+    }
+
+    scheduleNextPoll();
+};
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+        // Kembali ke tab: reset backoff dan poll segera
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+        scheduleNextPoll();
+    } else if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+};
+
+const handleModalKeydown = (event) => {
+    if (event.key === "Escape" && showModal.value) {
+        closeModal();
+    }
+};
+
+onMounted(async () => {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("keydown", handleModalKeydown);
+
+    await fetchDevices();
+    scheduleNextPoll();
 });
 
-// Fetch perangkat saat komponen dimuat dan mulai polling
-onMounted(async () => {
-    await fetchDevices();
-    startPolling();
+onUnmounted(() => {
+    if (pollTimer) clearTimeout(pollTimer);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("keydown", handleModalKeydown);
 });
 </script>

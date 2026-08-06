@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Device;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationRecipient;
 
@@ -12,14 +13,13 @@ class DeviceController extends Controller
 {
 
     /**
-     * Cek perangkat yang terhubung dengan pengguna tertentu.
+     * Cek perangkat yang terhubung dengan pengguna yang sedang login.
+     * Param {userId?} di route diabaikan demi keamanan — selalu pakai identitas dari token.
      */
-    public function getDevicesByUser($userId = null)
+    public function getDevicesByUser()
     {
-        // Ambil userId dari pengguna yang sedang login jika $userId tidak diberikan
-        if (!$userId) {
-            $userId = auth('api')->user()->users_id;
-        }
+        // Ambil userId dari pengguna yang sedang login (bukan dari input/route)
+        $userId = auth('api')->user()->users_id;
 
         // Cari perangkat yang terhubung dengan users_id
         $devices = Device::where('users_id', $userId)
@@ -71,6 +71,7 @@ class DeviceController extends Controller
 
     /**
      * Periksa apakah perangkat dengan devices_id tertentu ada.
+     * Hanya pemilik perangkat yang dapat melihat detailnya (cegah IDOR).
      */
     public function checkDeviceExistPrivate($devices_id)
     {
@@ -82,6 +83,15 @@ class DeviceController extends Controller
                 'status' => 'error',
                 'message' => 'Perangkat tidak ditemukan.',
             ], 404);
+        }
+
+        // Pastikan pemanggil adalah pemilik perangkat
+        $userId = auth('api')->user()->users_id;
+        if ($device->users_id !== $userId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki akses untuk perangkat ini.',
+            ], 403);
         }
 
         return response()->json([
@@ -188,10 +198,11 @@ class DeviceController extends Controller
             ], 200);
         } catch (\Exception $e) {
             // Penanganan kesalahan
+            Log::error('Gagal mengirim notifikasi link device ' . $devices_id . ': ' . $e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Perangkat berhasil ditautkan, tetapi gagal mengirim notifikasi.',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -218,10 +229,12 @@ class DeviceController extends Controller
             ], 404);
         }
 
-        // Periksa apakah perangkat memiliki users_id
-        if (!$device->users_id) {
+        // Pastikan pemanggil adalah pemilik perangkat (cegah IDOR)
+        $userId = auth('api')->user()->users_id;
+        if ($device->users_id !== $userId) {
             return response()->json([
-                'pesan' => 'Perangkat belum terhubung dengan pengguna. Tidak dapat memperbarui data.',
+                'status' => false,
+                'pesan' => 'Anda tidak memiliki akses untuk perangkat ini.',
             ], 403); // Forbidden
         }
 
@@ -253,7 +266,24 @@ class DeviceController extends Controller
             return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
         }
 
-        $device->delete();
+        // Pastikan pemanggil adalah pemilik perangkat (cegah IDOR)
+        $userId = auth('api')->user()->users_id;
+        if ($device->users_id !== $userId) {
+            return response()->json([
+                'status' => false,
+                'pesan' => 'Anda tidak memiliki akses untuk perangkat ini.',
+            ], 403);
+        }
+
+        try {
+            $device->delete();
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus perangkat ' . $devices_id . ': ' . $e->getMessage());
+
+            return response()->json([
+                'pesan' => 'Gagal menghapus perangkat. Pastikan tidak ada data terkait yang masih terhubung.',
+            ], 500);
+        }
 
         return response()->json([
             'pesan' => 'Perangkat berhasil dihapus.',
@@ -312,10 +342,11 @@ class DeviceController extends Controller
                 'data' => $device,
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Gagal mengirim notifikasi unlink device ' . $devices_id . ': ' . $e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Perangkat berhasil dihapus dari dashboard Anda, tetapi gagal mengirim notifikasi.',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

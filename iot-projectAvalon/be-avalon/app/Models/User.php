@@ -5,7 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use App\Models\Role;
-use App\Models\Otp_codes;
+use App\Models\OTP_codes;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -33,7 +33,7 @@ class User extends Authenticatable implements JWTSubject
         $randomNumber = mt_rand(100000, 999999);
         $now = Carbon::now();
 
-        $otp = Otp_codes::updateOrCreate(
+        $otp = OTP_codes::updateOrCreate(
             ['users_id' => $user->users_id],
             [
                 'otp_code' => $randomNumber,
@@ -96,25 +96,26 @@ class User extends Authenticatable implements JWTSubject
 
     public function otpCode()
     {
-        return $this->hasOne(Otp_codes::class, 'users_id');
+        return $this->hasOne(OTP_codes::class, 'users_id');
     }
 
-    // Relasi ke notifikasi yang dikirim oleh pengguna
+    // Relasi ke notifikasi yang dikirim oleh pengguna (kolom aktual: notifications.admin_id)
     public function sentNotifications()
     {
-        return $this->hasMany(Notification::class, 'sender_id', 'id');
+        return $this->hasMany(Notification::class, 'admin_id', 'users_id');
     }
 
     // Relasi ke notifikasi yang diterima oleh pengguna
+    // (melalui notification_recipients, di-scope ke users_id penerima)
     public function receivedNotifications()
     {
         return $this->hasManyThrough(
             Notification::class,
             NotificationRecipient::class,
-            'recipient_id', // Foreign key di notification_recipients
-            'notification_id', // Foreign key di notifications
-            'id', // Local key di users
-            'notification_id' // Local key di notification_recipients
+            'users_id', // FK di notification_recipients yang menunjuk users
+            'notifications_id', // FK di notifications yang dirujuk notification_recipients
+            'users_id', // Local key di users
+            'notifications_id' // Local key di notification_recipients
         );
     }
 }
