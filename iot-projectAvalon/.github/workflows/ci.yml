@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, canary, dev]
   pull_request:
 
 concurrency:
