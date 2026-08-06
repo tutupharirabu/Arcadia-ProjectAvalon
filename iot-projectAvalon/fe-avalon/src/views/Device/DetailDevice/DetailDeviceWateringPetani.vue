@@ -9,8 +9,8 @@
         <!-- Konten Jika Selesai Loading -->
         <template v-else>
             <!-- Informasi Perangkat -->
-            <div class="bg-accent text-on-secondary border border-neutral shadow-md rounded-lg p-6">
-                <h2 class="text-2xl font-semibold mb-4 text-secondary-content">Informasi Alat</h2>
+            <div class="bg-accent text-accent-content border border-neutral shadow-md rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-accent-content">Informasi Alat</h2>
                 <div class="space-y-2">
                     <p class="text-md"><strong>Nama Alat:</strong> {{ deviceDetail.deviceName }}</p>
                     <p class="text-md"><strong>Tipe Alat:</strong> {{ deviceDetail.deviceType }}</p>
@@ -44,9 +44,9 @@
                     </thead>
                     <tbody v-if="paginatedPumpLogData.length > 0">
                         <tr v-for="(log, index) in paginatedPumpLogData" :key="index">
-                            <td class="border px-4 py-2">{{ formatTimestamp(log.start_time) }}</td>
-                            <td class="border px-4 py-2">{{ formatTimestamp(log.end_time) }}</td>
-                            <td class="border px-4 py-2">{{ log.duration }}</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ formatTimestamp(log.start_time) }}</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ formatTimestamp(log.end_time) }}</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ log.duration }}</td>
                         </tr>
                     </tbody>
                     <tbody v-else>
@@ -60,17 +60,22 @@
 
                 <!-- Pagination Controls -->
                 <div class="flex justify-center items-center mt-4 space-x-2">
-                    <button class="btn btn-sm btn-neutral" :class="{ 'btn-disabled': currentPage === 1 }"
+                    <button class="btn btn-sm btn-neutral"
+                        :class="{ 'btn-disabled': totalPagesPumpLog === 0 || currentPage === 1 }"
+                        :disabled="totalPagesPumpLog === 0 || currentPage === 1" aria-label="Halaman sebelumnya"
                         @click="changePage(currentPage - 1)">
                         Prev
                     </button>
-                    <button v-for="page in totalPagesPumpLog" :key="page" class="btn btn-sm btn-base-200 text-primary"
-                        :class="{ 'btn-primary text-primary-content': page === currentPage }" @click="changePage(page)">
+                    <button v-for="page in totalPagesPumpLog" :key="page"
+                        class="btn btn-sm btn-base-200 text-primary"
+                        :class="{ 'btn-primary text-primary-content': page === currentPage }"
+                        :aria-current="page === currentPage ? 'page' : null" @click="changePage(page)">
                         {{ page }}
                     </button>
                     <button class="btn btn-sm btn-neutral"
-                        :class="{ 'btn-disabled': currentPage === totalPagesPumpLog }"
-                        @click="changePage(currentPage + 1)">
+                        :class="{ 'btn-disabled': totalPagesPumpLog === 0 || currentPage === totalPagesPumpLog }"
+                        :disabled="totalPagesPumpLog === 0 || currentPage === totalPagesPumpLog"
+                        aria-label="Halaman berikutnya" @click="changePage(currentPage + 1)">
                         Next
                     </button>
                 </div>
@@ -82,14 +87,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
 
 const route = useRoute();
 const router = useRouter();
-const AuthStore = useAuthStore();
 const isLoading = ref(true);
-let pollingInterval = null;
 
 const deviceDetail = ref({});
 const pumpLogData = ref([]);
@@ -108,9 +110,7 @@ const paginatedPumpLogData = computed(() => {
 const fetchDeviceDetail = async () => {
     try {
         const deviceId = route.params.id;
-        const response = await customFetch.get(`/device/check-private/${deviceId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/device/check-private/${deviceId}`);
         deviceDetail.value = {
             deviceName: response.data.data.device_name,
             deviceType: response.data.data.device_type || "Unknown Type",
@@ -127,13 +127,13 @@ const fetchDeviceDetail = async () => {
 const fetchPumpLogData = async () => {
     try {
         const deviceId = route.params.id;
-        const response = await customFetch.get(`/water-pump/log/${deviceId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/water-pump/log/${deviceId}`);
         pumpLogData.value = response.data.data;
+        return true;
     } catch (error) {
         pumpLogData.value = []; // Fallback ke array kosong
         console.error("Error fetching water pump log data:", error);
+        return false;
     } finally {
         isLoading.value = false; // Loader selesai
     }
@@ -156,17 +156,62 @@ const formatTimestamp = (timestamp) => {
     return date.toLocaleString();
 };
 
+// ---- Polling dengan visibility pause + exponential backoff ----
+const BASE_INTERVAL = 10000;
+const MAX_INTERVAL = 60000;
+let pollTimer = null;
+let currentInterval = BASE_INTERVAL;
+let consecutiveErrors = 0;
+
+const scheduleNextPoll = () => {
+    if (pollTimer) clearTimeout(pollTimer);
+    // Jangan jadwalkan saat tab tersembunyi (visibilitychange akan menjadwalkan ulang)
+    if (document.visibilityState !== "visible") return;
+    pollTimer = setTimeout(runPoll, currentInterval);
+};
+
+const runPoll = async () => {
+    if (document.visibilityState !== "visible") return;
+
+    const success = await fetchPumpLogData();
+
+    // Exponential backoff: interval naik 2x saat error, reset saat sukses
+    if (success) {
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+    } else {
+        consecutiveErrors += 1;
+        currentInterval = Math.min(BASE_INTERVAL * 2 ** consecutiveErrors, MAX_INTERVAL);
+    }
+
+    scheduleNextPoll();
+};
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+        // Kembali ke tab: reset backoff dan poll segera
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+        scheduleNextPoll();
+    } else if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+};
+
 onMounted(async () => {
     isLoading.value = true; // Set loader aktif saat halaman dimuat
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     await fetchDeviceDetail(); // Hanya panggil sekali saat halaman dimuat
     await fetchPumpLogData(); // Jalankan polling hanya untuk log pompa air
-    pollingInterval = setInterval(fetchPumpLogData, 10000); // Fetch data setiap 10 detik
+    scheduleNextPoll();
 });
 
 onUnmounted(() => {
-    if (pollingInterval) {
-        clearInterval(pollingInterval); // Hentikan polling
-        pollingInterval = null; // Pastikan nilai pollingInterval direset
+    if (pollTimer) {
+        clearTimeout(pollTimer); // Hentikan polling
+        pollTimer = null; // Pastikan nilai pollingInterval direset
     }
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 </script>

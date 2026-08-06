@@ -9,8 +9,8 @@
         <!-- Konten Jika Selesai Loading -->
         <template v-else>
             <!-- Informasi Perangkat -->
-            <div class="bg-accent text-on-secondary border border-neutral shadow-md rounded-lg p-6">
-                <h2 class="text-2xl font-semibold mb-4 text-secondary-content">Informasi Alat</h2>
+            <div class="bg-accent text-accent-content border border-neutral shadow-md rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-accent-content">Informasi Alat</h2>
                 <div class="space-y-2">
                     <p class="text-md"><strong>Nama Alat:</strong> {{ deviceDetail.deviceName }}</p>
                     <p class="text-md"><strong>Tipe Alat:</strong> {{ deviceDetail.deviceType }}</p>
@@ -66,17 +66,19 @@
                     </thead>
                     <tbody>
                         <tr v-for="(data, index) in paginatedHistoryData" :key="index">
-                            <td class="border px-4 py-2">{{ data.timestamp }}</td>
-                            <td class="border px-4 py-2">{{ data.temperature }} °C</td>
-                            <td class="border px-4 py-2">{{ data.humidity }} %</td>
-                            <td class="border px-4 py-2">{{ data.soilMoisture }} %</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ data.timestamp }}</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ data.temperature }} °C</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ data.humidity }} %</td>
+                            <td class="border px-4 py-2 tabular-nums">{{ data.soilMoisture }} %</td>
                         </tr>
                     </tbody>
                 </table>
 
                 <!-- Pagination Controls -->
                 <div class="flex justify-center items-center mt-4 space-x-2">
-                    <button class="btn btn-sm btn-neutral" :class="{ 'btn-disabled': currentPage === 1 }"
+                    <button class="btn btn-sm btn-neutral"
+                        :class="{ 'btn-disabled': totalPages === 0 || currentPage === 1 }"
+                        :disabled="totalPages === 0 || currentPage === 1" aria-label="Halaman sebelumnya"
                         @click="changePage(currentPage - 1)">
                         Prev
                     </button>
@@ -84,11 +86,14 @@
                     <!-- Tombol Pagination -->
                     <button v-for="page in visiblePages" :key="page"
                         class="btn btn-sm px-3 py-2 text-primary border border-gray-300 rounded"
-                        :class="{ 'bg-primary text-white': page === currentPage }" @click="changePage(page)">
+                        :class="{ 'bg-primary text-white': page === currentPage }"
+                        :aria-current="page === currentPage ? 'page' : null" @click="changePage(page)">
                         {{ page }}
                     </button>
 
-                    <button class="btn btn-sm btn-neutral" :class="{ 'btn-disabled': currentPage === totalPages }"
+                    <button class="btn btn-sm btn-neutral"
+                        :class="{ 'btn-disabled': totalPages === 0 || currentPage === totalPages }"
+                        :disabled="totalPages === 0 || currentPage === totalPages" aria-label="Halaman berikutnya"
                         @click="changePage(currentPage + 1)">
                         Next
                     </button>
@@ -101,7 +106,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/Auth";
 import { Line } from "vue-chartjs";
 import {
     Chart as ChartJS,
@@ -119,15 +123,35 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale
 
 const route = useRoute();
 const router = useRouter();
-const AuthStore = useAuthStore();
 const isLoading = ref(true);
-let pollingInterval = null;
 
 const deviceDetail = ref({});
 const historyData = ref([]);
-const temperatureChartData = ref({ labels: [], datasets: [] });
-const humidityChartData = ref({ labels: [], datasets: [] });
-const soilMoistureChartData = ref({ labels: [], datasets: [] });
+
+// Objek chart dibuat sekali; data dimutasi in-place agar identitas dataset stabil
+// (vue-chartjs v5 watch deep pada prop data, sehingga push/splice memicu update tanpa re-create chart)
+const createChartData = (label, borderColor, backgroundColor) => ({
+    labels: [],
+    datasets: [
+        {
+            label,
+            data: [],
+            borderColor,
+            backgroundColor,
+            fill: true,
+        },
+    ],
+});
+
+const temperatureChartData = ref(createChartData("Temperature (°C)", "red", "rgba(255, 99, 132, 0.2)"));
+const humidityChartData = ref(createChartData("Humidity (%)", "blue", "rgba(54, 162, 235, 0.2)"));
+const soilMoistureChartData = ref(createChartData("Soil Moisture (%)", "green", "rgba(75, 192, 192, 0.2)"));
+
+// Mutasi data chart in-place tanpa mengganti identitas objek
+const setChartData = (chartData, labels, values) => {
+    chartData.labels.splice(0, chartData.labels.length, ...labels);
+    chartData.datasets[0].data.splice(0, chartData.datasets[0].data.length, ...values);
+};
 
 // Pagination states
 const currentPage = ref(1);
@@ -176,9 +200,7 @@ const chartOptions = {
 const fetchDeviceDetail = async () => {
     try {
         const deviceId = route.params.id;
-        const response = await customFetch.get(`/device/check-private/${deviceId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/device/check-private/${deviceId}`);
         deviceDetail.value = {
             deviceName: response.data.data.device_name,
             deviceType: response.data.data.device_type || "Unknown Type",
@@ -199,18 +221,16 @@ const fetchHistoricalData = async () => {
         // Cek deviceId
         if (deviceId === undefined || deviceId === null) {
             console.warn("Device ID tidak valid.");
-            return;
+            return false;
         }
 
-        const response = await customFetch.get(`/historical-data/${deviceId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/historical-data/${deviceId}`);
         const data = response.data.data;
 
         // Cek jika data kosong
         if (!data || data.length === 0) {
             console.warn("Tidak ada data historis untuk perangkat ini.");
-            return; // Keluar dari fungsi
+            return false; // Keluar dari fungsi
         }
 
         // Data untuk tabel (data terbaru di atas)
@@ -228,7 +248,7 @@ const fetchHistoricalData = async () => {
             soilMoisture: item.parameters.soil_moisture,
         }));
 
-        // Data untuk chart
+        // Data untuk chart (urutan kronologis)
         const reversedDataForChart = [...data].reverse();
 
         const timestamps = reversedDataForChart.map(item =>
@@ -245,56 +265,26 @@ const fetchHistoricalData = async () => {
         const humidity = reversedDataForChart.map(item => item.parameters.humidity);
         const soilMoisture = reversedDataForChart.map(item => item.parameters.soil_moisture);
 
-        // Set chart data
-        temperatureChartData.value = {
-            labels: timestamps,
-            datasets: [
-                {
-                    label: "Temperature (°C)",
-                    data: temperature,
-                    borderColor: "red",
-                    backgroundColor: "rgba(255, 99, 132, 0.2)",
-                    fill: true,
-                },
-            ],
-        };
-        humidityChartData.value = {
-            labels: timestamps,
-            datasets: [
-                {
-                    label: "Humidity (%)",
-                    data: humidity,
-                    borderColor: "blue",
-                    backgroundColor: "rgba(54, 162, 235, 0.2)",
-                    fill: true,
-                },
-            ],
-        };
-        soilMoistureChartData.value = {
-            labels: timestamps,
-            datasets: [
-                {
-                    label: "Soil Moisture (%)",
-                    data: soilMoisture,
-                    borderColor: "green",
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
-                    fill: true,
-                },
-            ],
-        };
+        // Update chart in-place (identitas objek dataset dipertahankan)
+        setChartData(temperatureChartData.value, timestamps, temperature);
+        setChartData(humidityChartData.value, timestamps, humidity);
+        setChartData(soilMoistureChartData.value, timestamps, soilMoisture);
+
+        return true;
     } catch (error) {
         // Menangani error spesifik berdasarkan status code
         if (error.response) {
             if (error.response.status === 404) {
                 console.warn("Perangkat tidak ditemukan.");
             } else if (error.response.status === 403) {
-                return;
+                return false;
             } else {
                 console.error("Terjadi kesalahan lain:", error.response.data.pesan);
             }
         } else {
             console.error("Network Error:", error.message);
         }
+        return false;
     } finally {
         isLoading.value = false; // Loader selesai
     }
@@ -304,11 +294,60 @@ const navigateToUpdateForm = () => {
     router.push({ name: "updateDevice", params: { id: route.params.id } });
 };
 
+// ---- Polling dengan visibility pause + exponential backoff ----
+// History lengkap di-fetch tiap 30 detik (dikurangi dari 10s) untuk mengurangi beban,
+// chart & tabel tetap diperbarui dari data yang sama.
+const BASE_INTERVAL = 30000;
+const MAX_INTERVAL = 120000;
+let pollTimer = null;
+let currentInterval = BASE_INTERVAL;
+let consecutiveErrors = 0;
+
+const scheduleNextPoll = () => {
+    if (pollTimer) clearTimeout(pollTimer);
+    // Jangan jadwalkan saat tab tersembunyi (visibilitychange akan menjadwalkan ulang)
+    if (document.visibilityState !== "visible") return;
+    pollTimer = setTimeout(runPoll, currentInterval);
+};
+
+const runPoll = async () => {
+    if (document.visibilityState !== "visible") return;
+
+    const success = await fetchHistoricalData();
+
+    // Exponential backoff: interval naik 2x saat error, reset saat sukses
+    if (success) {
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+    } else {
+        consecutiveErrors += 1;
+        currentInterval = Math.min(BASE_INTERVAL * 2 ** consecutiveErrors, MAX_INTERVAL);
+    }
+
+    scheduleNextPoll();
+};
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+        // Kembali ke tab: reset backoff dan poll segera
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+        scheduleNextPoll();
+    } else if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+};
+
 onMounted(async () => {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     await fetchDeviceDetail();
     await fetchHistoricalData();
-    pollingInterval = setInterval(fetchHistoricalData, 10000);
+    scheduleNextPoll();
 });
 
-onUnmounted(() => clearInterval(pollingInterval));
+onUnmounted(() => {
+    if (pollTimer) clearTimeout(pollTimer);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+});
 </script>
