@@ -18,8 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Dummy key untuk test di CI (bukan secret) — Laravel butuh APP_KEY untuk
-      # session/crypt saat test; tymon/jwt-auth mem-fallback ke APP_KEY bila JWT_SECRET kosong.
+      # session/crypt saat test; jwt-auth butuh JWT_SECRET eksplisit (tidak fallback ke APP_KEY).
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      JWT_SECRET: dummy-ci-jwt-secret-0123456789abcdef
     defaults:
       run:
         working-directory: iot-projectAvalon/be-avalon
