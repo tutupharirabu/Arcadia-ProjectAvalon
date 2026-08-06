@@ -41,6 +41,19 @@ Bagian ini mencatat progres perbaikan di atas. **Temuan lama di bagian bawah tid
 | CI/CD | ✅ — `.github/workflows/ci.yml` (3 jobs) + `dependabot.yml`; README 3 komponen ditulis ulang |
 | Deploy | ✅ — Vercel/Railway dihapus; target deploy VPS (nginx + PHP-FPM + Redis + 2 proses node) |
 
+### Wave 3 — Composer vulnerabilities + diagnostics PHP: ✅ SELESAI (2026-08-06)
+
+| Item | Status |
+|---|---|
+| Composer audit | ✅ — sebelum: 34 advisory (6 high, 24 medium, 4 low, termasuk dev); sesudah: 0 non-ignored. Sisa 3 advisory laravel/framework (lihat baris terakhir) — TIDAK ada fix di line 11.x |
+| Update targeted (lockfile) | ✅ — `composer update <paket>` + `-W` (transitif). 40 paket naik: laravel/framework 11.30→11.55, guzzle 7.9.2→7.15.3, symfony/* 7.1→7.4.15, league/commonmark 2.5.3→2.9, carbon 3.8.2→3.13.1, phpunit 11.4.3→11.5.56, faker 1.24.0→1.24.1, pint 1.18.1→1.30.4, pest 3.5.1→3.8.7 |
+| `config.policy.advisories.ignore-id` (composer.json) | ✅ — 3 ID advisory tanpa fix 11.x (PKSA-m5cs-t1y6-qpcs, PKSA-3r5d-mb8f-1qw9, PKSA-mdq4-51ck-6kdq). Tanpa ini resolver composer memblokir SEMUA versi laravel/framework 11.x sehingga framework tidak bisa di-update sama sekali. Fix hanya tersedia di 12.60+/13.x (major upgrade di luar scope) |
+| predis vs phpredis | ⚠️ dicatat — composer.json: `predis/predis ^2.3` (tidak vulnerable, tidak di-update), `.env.example`: `REDIS_CLIENT=phpredis`. Keputusan ini TIDAK diubah |
+| Diagnostics models | ✅ — HistoricalData (2), Role (4), Notification (6), User (14): docblock `@return` + native return type relation; root cause `@use HasFactory<...>` di User.php merusak parse intelephense → dihapus |
+| Diagnostics unused imports | ✅ — RoleController (`isAdmin`), NotificationRecipientController (`Request`), ForgotPasswordMailSend (`ShouldQueue`) |
+| Validasi | ✅ — `php artisan test` 18 passed, `php -l` semua file diubah, `composer install --dry-run` sinkron |
+| Sisa (bukan bug) | ⚠️ false-positive LSP murni: `Method where/create/find does not exist` (magic `__callStatic` Eloquent tanpa ide-helper), `Undefined variable $this` (binding Pest), `fromUser` (magic facade), warning `Missing return type` di controller (style codebase, bukan bug). Test file TIDAK diubah |
+
 ### Aksi yang dibutuhkan dari user
 
 1. **Ubah repo ke `private`** — riwayat commit sebelum perbaikan sempat publik.
