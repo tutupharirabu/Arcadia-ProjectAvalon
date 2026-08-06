@@ -13,8 +13,16 @@ class NotificationRecipientController extends Controller
      */
     public function markAsRead($id)
     {
-        // Cari penerima notifikasi berdasarkan notifications_id
-        $recipient = NotificationRecipient::where('notifications_id', $id)->first();
+        $user = auth('api')->user();
+
+        // Cari penerima notifikasi berdasarkan notifications_id, scoped ke pemanggil
+        // (fix bug `->first()` pada notifikasi broadcast: baris milik pemanggil yang diupdate)
+        $recipient = NotificationRecipient::where('notifications_id', $id)
+            ->where(function ($q) use ($user) {
+                $q->where('users_id', $user->users_id)
+                    ->orWhere('roles_id', $user->roles_id);
+            })
+            ->first();
 
         // Jika tidak ditemukan, kembalikan respon 404
         if (!$recipient) {
@@ -35,24 +43,19 @@ class NotificationRecipientController extends Controller
     }
 
     /**
-     * Ambil daftar notifikasi untuk penerima tertentu (berdasarkan users_id atau roles_id)
+     * Ambil daftar notifikasi untuk pemanggil (identitas dari token, bukan query string)
      */
-    public function getNotificationsForRecipient(Request $request)
+    public function getNotificationsForRecipient()
     {
-        $validated = $request->validate([
-            'users_id' => 'nullable|uuid',
-            'roles_id' => 'nullable|uuid',
-        ]);
+        $user = auth('api')->user();
 
         $query = NotificationRecipient::with(['notification', 'user', 'role']);
 
-        if ($validated['users_id']) {
-            $query->where('users_id', $validated['users_id']);
-        }
-
-        if ($validated['roles_id']) {
-            $query->where('roles_id', $validated['roles_id']);
-        }
+        // Scoped ke identitas ter-autentikasi (cegah IDOR via query string)
+        $query->where(function ($q) use ($user) {
+            $q->where('users_id', $user->users_id)
+                ->orWhere('roles_id', $user->roles_id);
+        });
 
         $recipients = $query->paginate(10);
 
