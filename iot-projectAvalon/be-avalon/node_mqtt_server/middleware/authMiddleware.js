@@ -1,7 +1,16 @@
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const Redis = require("ioredis");
+const redisClient = require("../redisClient");
 
-const redisClient = new Redis(process.env.REDIS_URL);
+const SHARED_SECRET_HEADER = "x-shared-secret";
+
+// Perbandingan constant-time agar timing tidak membocorkan panjang/isi secret
+function safeEqual(a, b) {
+    const bufA = Buffer.from(String(a));
+    const bufB = Buffer.from(String(b));
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
 
 async function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -48,4 +57,25 @@ async function authenticateToken(req, res, next) {
     });
 }
 
-module.exports = authenticateToken;
+// Autentikasi server-to-server memakai shared-secret (header `x-shared-secret`),
+// dibandingkan dengan env SHARED_SECRET. Fail-closed: jika env kosong, tolak request.
+function requireSharedSecret(req, res, next) {
+    const expected = process.env.SHARED_SECRET;
+    if (!expected) {
+        console.error("[ERROR] SHARED_SECRET belum dikonfigurasi di env — permintaan server-to-server ditolak.");
+        return res.status(503).json({
+            message: "Layanan belum dikonfigurasi. Coba lagi nanti.",
+        });
+    }
+
+    const provided = req.headers[SHARED_SECRET_HEADER];
+    if (!provided || !safeEqual(provided, expected)) {
+        return res.status(401).json({
+            message: "Akses ditolak.",
+        });
+    }
+
+    next();
+}
+
+module.exports = { authenticateToken, requireSharedSecret };

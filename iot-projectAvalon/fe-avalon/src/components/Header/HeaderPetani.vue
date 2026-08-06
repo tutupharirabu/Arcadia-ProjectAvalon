@@ -7,21 +7,22 @@
             </p>
         </div>
         <div class="navbar-end">
-            <button class="btn btn-primary text-primary-content px-4 py-2 rounded-lg" @click="showInputModal = true">
+            <button class="btn btn-primary text-primary-content px-4 py-2 rounded-lg" @click="openInputModal">
                 Tambah Alat +
             </button>
         </div>
     </div>
 
     <!-- Modal Input Device ID -->
-    <div v-if="showInputModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+    <div v-if="showInputModal" role="dialog" aria-modal="true" aria-label="Tambah Alat"
+        class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50" @click.self="closeModal">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">Masukkan Device ID</h3>
 
             <!-- Input Device ID -->
             <div v-if="!isLoading && (!isCameraActive || deviceIdInput)">
-                <input v-model="deviceIdInput" :readonly="isFrozen" type="text" placeholder="Device ID"
-                    class="input input-bordered w-full mb-4" />
+                <input v-model="deviceIdInput" :readonly="isFrozen" type="text" aria-label="Device ID alat"
+                    placeholder="Masukkan Device ID alat" class="input input-bordered w-full mb-4" />
             </div>
 
             <!-- QR Code Scanner -->
@@ -76,17 +77,18 @@
     </div>
 
     <!-- Modal Result -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Tautkan Alat"
+        class="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50" @click.self="closeResultModal">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
             <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
             <p>{{ modalMessage }}</p>
-            <button @click="showModal = false" class="btn btn-primary mt-4">Tutup</button>
+            <button @click="closeResultModal" class="btn btn-primary mt-4">Tutup</button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 // import { StreamQrcodeBarcodeReader } from "vue3-barcode-qrcode-reader";
 import { useAuthStore } from "@/stores/Auth";
 import customFetch from "@/utils/customFetch";
@@ -107,11 +109,40 @@ const isFrozen = ref(false); // Variabel untuk membekukan input
 const refCamera = ref(null); // Ref untuk StreamQrcodeBarcodeReader
 const isCameraActive = ref(false); // Menandakan apakah kamera sedang aktif atau tidak
 
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
+
+// Fungsi untuk membuka modal dan menyimpan elemen yang fokus sebelumnya
+function openInputModal() {
+    lastFocusedElement = document.activeElement;
+    showInputModal.value = true;
+}
+
 // Fungsi untuk menutup modal dan mereset input
 function closeModal() {
     showInputModal.value = false; // Tutup modal
     deviceIdInput.value = ""; // Reset input field
+    lastFocusedElement?.focus?.();
 }
+
+// Tutup modal hasil (dengan restore fokus)
+function closeResultModal() {
+    showModal.value = false;
+    lastFocusedElement?.focus?.();
+}
+
+// Tutup modal mana pun yang sedang terbuka saat ESC ditekan
+function handleModalKeydown(event) {
+    if (event.key === "Escape") {
+        if (showModal.value) {
+            closeResultModal();
+        } else if (showInputModal.value) {
+            closeModal();
+        }
+    }
+}
+
+onMounted(() => window.addEventListener("keydown", handleModalKeydown));
+onUnmounted(() => window.removeEventListener("keydown", handleModalKeydown));
 
 // Fungsi saat QR Code memberikan hasil
 function onResult(data) {
@@ -162,15 +193,10 @@ const linkDevice = async () => {
             return;
         }
 
-        // Permintaan ke backend
+        // Permintaan ke backend (Authorization di-inject otomatis oleh interceptor)
         const response = await customFetch.post(
             `/device/link/${deviceIdInput.value}`,
-            { user_id: userId },
-            {
-                headers: {
-                    Authorization: `Bearer ${authStore.tokenUser}`,
-                },
-            }
+            { user_id: userId }
         );
 
         // Penanganan respons

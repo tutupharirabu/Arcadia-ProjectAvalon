@@ -32,7 +32,7 @@ class RegisterMailSend extends Mailable
     {
         return new Envelope(
             subject: 'Arcadia - Confirmation Code',
-            from: new Address(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME')),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
         );
     }
 
@@ -42,7 +42,7 @@ class RegisterMailSend extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.registerMail',
+            view: 'Mail.registerMail',
             with: [
                 'name' => $this->user->name,
                 'otp' => $this->user->otpCode->otp_code,

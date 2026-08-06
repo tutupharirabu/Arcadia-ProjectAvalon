@@ -5,9 +5,9 @@
         <div class="grid grid-cols-4 gap-4 w-full">
 
             <!-- Weather App Section (Full Row) -->
-            <div class="col-span-4 p-4 border border-neutral rounded-lg shadow-md">
+            <!-- <div class="col-span-4 p-4 border border-neutral rounded-lg shadow-md">
                 <p>POKOKNYA DISINI ADA WEATHER APP</p>
-            </div>
+            </div> -->
 
             <!-- Calendar Section (3/4 Lebar) -->
             <div class="col-span-3 rounded-lg shadow-md border">
@@ -83,7 +83,7 @@
                             <h3 class="text-center font-bold text-lg mb-4">
                                 Data Sensor untuk Alat {{ chart.name }}
                             </h3>
-                            <Line :data="JSON.parse(JSON.stringify(chart))" :options="chartOptions" />
+                            <Line :data="chart" :options="chartOptions" />
                         </div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import customFetch from '@/utils/customFetch';
+import customFetch, { nodeFetch } from '@/utils/customFetch';
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useAuthStore } from '@/stores/Auth';
 
@@ -135,39 +135,55 @@ const waterPumpDevices = ref([]);
 const pumpLogData = ref([]);
 const isEventLoading = ref(false);
 
+// Helper: jalankan fungsi async per item dengan concurrency terbatas (default 3)
+const mapWithConcurrency = async (items, fn, limit = 3) => {
+    const results = new Array(items.length);
+    let index = 0;
+
+    const worker = async () => {
+        while (index < items.length) {
+            const i = index;
+            index += 1;
+            results[i] = await fn(items[i], i);
+        }
+    };
+
+    const workerCount = Math.min(limit, items.length);
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return results;
+};
+
 const fetchPumpLogData = async () => {
     try {
         if (!waterPumpDevices.value || waterPumpDevices.value.length === 0) {
             console.warn("No water pump devices available.");
             pumpLogData.value = [];
-            return;
+            return true;
         }
 
-        const allLogs = [];
-
-        for (const device of waterPumpDevices.value) {
+        // Ambil log semua device secara paralel (maks 3 bersamaan)
+        const deviceLogs = await mapWithConcurrency(waterPumpDevices.value, async (device) => {
             try {
-                const response = await customFetch.get(`/water-pump/log/${device.devices_id}`, {
-                    headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-                });
+                const response = await customFetch.get(`/water-pump/log/${device.devices_id}`);
 
-                const deviceLogs = response?.data?.data || [];
-                allLogs.push(
-                    ...deviceLogs.map(log => ({
-                        ...log,
-                        deviceName: device.name || `Device ${device.id}`,
-                    }))
-                );
+                const logs = response?.data?.data || [];
+                return logs.map(log => ({
+                    ...log,
+                    deviceName: device.name || `Device ${device.id}`,
+                }));
             } catch (error) {
                 console.error(`Error fetching logs for device ${device.id}:`, error);
+                return [];
             }
-        }
+        });
 
-        pumpLogData.value = allLogs; // Simpan data log di state
+        pumpLogData.value = deviceLogs.flat(); // Simpan data log di state
         console.log("All pump log data fetched successfully:", pumpLogData.value);
+        return true;
     } catch (error) {
         pumpLogData.value = [];
         console.error("Error fetching water pump log data:", error);
+        return false;
     }
 };
 
@@ -279,7 +295,7 @@ const appendToDeviceChart = (deviceId, deviceData) => {
 let isFetching = false;
 
 const fetchData = async () => {
-    if (isFetching) return;
+    if (isFetching) return false;
 
     isFetching = true;
     try {
@@ -287,13 +303,11 @@ const fetchData = async () => {
 
         if (!AuthStore.currentUser || !AuthStore.tokenUser) {
             console.error("User or token not found.");
-            return;
+            return false;
         }
 
         const userId = AuthStore.currentUser.id;
-        const response = await customFetch.get(`/device/check-by-user/${userId}`, {
-            headers: { Authorization: `Bearer ${AuthStore.tokenUser}` },
-        });
+        const response = await customFetch.get(`/device/check-by-user/${userId}`);
 
         const devices = response.data.data;
 
@@ -308,13 +322,10 @@ const fetchData = async () => {
             name: device.device_name || `Device ${device.devices_id}`,
         }));
 
-        // Loop hanya perangkat yang berstatus "Active"
-        for (const device of activeDevices) {
+        // Ambil data sensor semua perangkat aktif secara paralel (maks 3 bersamaan)
+        await mapWithConcurrency(activeDevices, async (device) => {
             try {
-                const detailResponse = await customFetch.get(
-                    `http://localhost:3000/api/dashboard/${device.devices_id}`,
-                    { headers: { Authorization: `Bearer ${AuthStore.tokenUser}` } }
-                );
+                const detailResponse = await nodeFetch.get(`/api/dashboard/${device.devices_id}`);
 
                 const detailData = detailResponse.data.data;
 
@@ -353,9 +364,12 @@ const fetchData = async () => {
             } catch (error) {
                 console.error(`Error fetching device ${device.devices_id}:`, error);
             }
-        }
+        });
+
+        return true;
     } catch (error) {
         console.error("Error fetching data:", error);
+        return false;
     } finally {
         isFetching = false;
         isLoading.value = false;
@@ -366,19 +380,17 @@ const notifications = ref([]);
 
 // Fetch notifications from API
 const fetchNotifications = async () => {
-    if (isFetching) return;
+    if (isFetching) return false;
 
     isFetching = true;
     try {
-        const response = await customFetch.get("/notification", {
-            headers: {
-                Authorization: `Bearer ${AuthStore.tokenUser}`,
-            },
-        });
+        const response = await customFetch.get("/notification");
 
         notifications.value = response.data.data; // Asumsi notifikasi ada di response.data.data
+        return true;
     } catch (error) {
         console.error("Gagal mengambil notifikasi:", error);
+        return false;
     } finally {
         isFetching = false;
         isLoadingNotifikasi.value = false; // Matikan loader
@@ -401,13 +413,8 @@ const filteredNotifications = computed(() =>
 // Fungsi untuk menandai notifikasi sebagai dibaca
 const markAsRead = async (notificationId) => {
     try {
-        // Mengirim permintaan PUT ke backend dengan parameter is_read
-        await customFetch.put(`/notification/recipient/${notificationId}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${AuthStore.tokenUser}`,
-                },
-            });
+        // Mengirim permintaan PUT ke backend (body kosong, header Authorization di-inject interceptor)
+        await customFetch.put(`/notification/recipient/${notificationId}`, {});
 
         // Update status is_read di frontend
         notifications.value = notifications.value.map((notification) =>
@@ -434,12 +441,62 @@ const formatTimestamp = (timestamp) => {
     });
 };
 
-// Interval fetch
-let fetchInterval = null;
+// ---- Polling dengan visibility pause + exponential backoff ----
+const BASE_INTERVAL = 10000; // Polling normal setiap 10 detik
+const MAX_INTERVAL = 60000; // Batas atas backoff (1 menit)
+let pollTimer = null;
+let currentInterval = BASE_INTERVAL;
+let consecutiveErrors = 0;
+
+const scheduleNextPoll = () => {
+    if (pollTimer) clearTimeout(pollTimer);
+    // Jangan jadwalkan saat tab tersembunyi (visibilitychange akan menjadwalkan ulang)
+    if (document.visibilityState !== "visible") return;
+    pollTimer = setTimeout(runPoll, currentInterval);
+};
+
+const runPoll = async () => {
+    if (document.visibilityState !== "visible") return;
+
+    try {
+        console.log("Polling data...");
+        const dataOk = await fetchData(); // Fetch perangkat
+        const notifOk = await fetchNotifications(); // Fetch notifikasi
+
+        // Exponential backoff: interval naik 2x saat error, reset saat sukses
+        if (dataOk && notifOk) {
+            consecutiveErrors = 0;
+            currentInterval = BASE_INTERVAL;
+        } else {
+            consecutiveErrors += 1;
+            currentInterval = Math.min(BASE_INTERVAL * 2 ** consecutiveErrors, MAX_INTERVAL);
+        }
+    } catch (error) {
+        console.error("Error during polling:", error);
+        consecutiveErrors += 1;
+        currentInterval = Math.min(BASE_INTERVAL * 2 ** consecutiveErrors, MAX_INTERVAL);
+    } finally {
+        scheduleNextPoll();
+    }
+};
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+        // Kembali ke tab: reset backoff dan poll segera
+        consecutiveErrors = 0;
+        currentInterval = BASE_INTERVAL;
+        scheduleNextPoll();
+    } else if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+};
 
 onMounted(async () => {
     try {
         isLoading.value = true; // Aktifkan loader
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
         // Fetch perangkat terlebih dahulu
         await fetchData();
@@ -452,28 +509,21 @@ onMounted(async () => {
 
         // Inisialisasi event setelah log tersedia
         await initializeEvent();
-
-        // Interval untuk fetch data dan notifikasi setiap 10 detik
-        fetchInterval = setInterval(async () => {
-            try {
-                console.log("Polling data...");
-                await fetchData(); // Fetch perangkat
-                await fetchNotifications(); // Fetch notifikasi
-            } catch (error) {
-                console.error("Error during polling:", error);
-            }
-        }, 10000); // Interval 10 detik
     } catch (error) {
         console.error("Error in onMounted:", error);
     } finally {
         isLoading.value = false; // Nonaktifkan loader
+        // Mulai polling apa pun hasil fetch awal
+        scheduleNextPoll();
     }
 });
 
 onBeforeUnmount(() => {
-    if (fetchInterval) {
-        clearInterval(fetchInterval); // Hentikan interval saat komponen di-unmount
+    if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
     }
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 </script>
 

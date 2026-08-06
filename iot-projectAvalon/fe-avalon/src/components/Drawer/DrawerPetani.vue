@@ -1,21 +1,21 @@
 <template>
     <div :class="[
-        'bg-accent text-base-content border-r border-neutral transition-all duration-300',
-        isDrawerOpen ? 'w-48' : 'w-18'
+        'bg-accent text-accent-content border-r border-neutral transition-all duration-300',
+        isDrawerOpen ? 'w-48' : 'w-20'
     ]" class="flex flex-col h-screen">
         <!-- Drawer Header -->
-        <div class="flex items-center justify-between p-3 text-primary">
+        <div class="flex items-center justify-between p-3 text-accent-content">
             <span v-if="isDrawerOpen" class="text-lg font-semibold">Arcadia Flora Tech™</span>
             <button class="btn btn-circle btn-ghost" @click="toggleDrawer" aria-label="toggle drawer">
                 <!-- Jika drawer terbuka, tampilkan ikon bi-list -->
-                <v-icon v-if="isDrawerOpen" name="bi-list" class="h-6 w-6" />
+                <v-icon v-if="isDrawerOpen" name="bi-list" class="h-6 w-6" aria-hidden="true" />
                 <!-- Jika drawer tertutup, tampilkan gambar logo -->
                 <img v-else src="@/assets/LogoArcadia.png" alt="Arcadia Flora Tech™" class="h-6 w-auto" />
             </button>
         </div>
 
         <!-- Drawer Items -->
-        <ul class="menu flex-grow text-primary">
+        <ul class="menu flex-grow text-accent-content">
             <DrawerList v-for="item in filterNavItems" :key="item.name" :data="item" :isDrawerOpen="isDrawerOpen" />
         </ul>
 
@@ -23,7 +23,7 @@
         <div class="p-2 mt-auto">
             <button class="btn btn-primary w-full flex items-center justify-center gap-2" @click="handleLogout"
                 :disabled="isLoading">
-                <v-icon v-if="!isLoading" name="ri-logout-box-line" class="h-5 w-5" />
+                <v-icon v-if="!isLoading" name="ri-logout-box-line" class="h-5 w-5" aria-hidden="true" />
                 <span v-if="!isLoading && isDrawerOpen">Logout</span>
                 <span v-else-if="isLoading" class="loading loading-spinner loading-sm text-primary"></span>
             </button>

@@ -13,10 +13,11 @@
 
         <!-- Dropdown Menu Mobile -->
         <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] w-52 bg-base-100 rounded-box shadow">
-          <li v-for="item in filterNavItems" :key="item.name" class="relative">
+          <li v-for="item in filterNavItems" :key="item.name" class="relative group">
             <RouterLink :to="item.url" class="text-black"> {{ item.name }} </RouterLink>
             <!-- Submenu jika ada children -->
-            <ul v-if="item.children" class="absolute left-full top-0 mt-1 bg-white rounded-md shadow-lg hidden group-hover:block">
+            <ul v-if="item.children"
+              class="absolute left-full top-0 mt-1 bg-white rounded-md shadow-lg hidden group-hover:block group-focus-within:block">
               <li v-for="child in item.children" :key="child.name" class="px-4 py-2 hover:bg-gray-200">
                 <RouterLink :to="child.url" class="text-black">{{ child.name }}</RouterLink>
               </li>
@@ -38,7 +39,8 @@
         <li v-for="item in filterNavItems" :key="item.name" class="relative group">
           <RouterLink :to="item.url" class="text-navbar"> {{ item.name }} </RouterLink>
           <!-- Submenu jika ada children -->
-          <ul v-if="item.children" class="absolute left-0 top-full mt-1 bg-white rounded-md shadow-lg hidden group-hover:block">
+          <ul v-if="item.children"
+            class="absolute left-0 top-full mt-1 bg-white rounded-md shadow-lg hidden group-hover:block group-focus-within:block">
             <li v-for="child in item.children" :key="child.name" class="px-4 py-2 hover:bg-gray-200">
               <RouterLink :to="child.url" class="text-black">{{ child.name }}</RouterLink>
             </li>
@@ -59,11 +61,13 @@
 
 <script setup>
 import { useAuthStore } from "@/stores/Auth";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import listNav from "@/utils/listNav";
 
 const authStore = useAuthStore();
-const { currentUser, logoutUser } = authStore;
+const { currentUser } = storeToRefs(authStore);
+const { logoutUser } = authStore;
 
 const filterNavItems = computed(() => {
   return listNav.filter((item) => {
@@ -123,7 +127,8 @@ const handleLogout = () => {
   transform: translateY(-10px); /* Initial position for slide effect */
 }
 
-.menu li:hover > ul {
+.menu li:hover > ul,
+.menu li:focus-within > ul {
   display: block;
   opacity: 1;
   visibility: visible;
@@ -150,7 +155,8 @@ const handleLogout = () => {
     box-shadow: none; /* No shadow for mobile */
   }
 
-  .dropdown-content .menu-sm li:hover > ul {
+  .dropdown-content .menu-sm li:hover > ul,
+  .dropdown-content .menu-sm li:focus-within > ul {
     display: block;
   }
 

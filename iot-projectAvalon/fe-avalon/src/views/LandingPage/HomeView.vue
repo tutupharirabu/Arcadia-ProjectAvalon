@@ -5,23 +5,21 @@
         class="w-full h-full object-cover opacity-70 hidden md:block">
     </div>
     <!-- Hero Section -->
-    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen "
-      data-aos="fade-up">
-      <h2 class="text-lg font-medium text-pink-600 mb-2" data-aos="fade-up" data-aos-delay="100">
+    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen ">
+      <h2 class="text-lg font-medium text-pink-600 mb-2">
         Arcadia Flora Tech
       </h2>
 
-      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight" data-aos="fade-up"
-        data-aos-delay="200">
+      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight">
         Berkebun Cerdas <span class="text-gradient">Menebar Keindahan</span>
       </h1>
 
       <div class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-lg text-base md:text-lg text-gray-800"
-        style="max-width: 70%;" data-aos="fade-up" data-aos-delay="300">
+        style="max-width: 70%;">
         Enhance Your Agricultural Yields with Our Smart Technology.
       </div>
 
-      <div class="mt-8 mb-12 flex justify-center" data-aos="fade-up" data-aos-delay="400">
+      <div class="mt-8 mb-12 flex justify-center">
         <router-link to="/arcadia-partner" class="btn-register-now">
           Daftar Arcadia Partner
         </router-link>
@@ -140,30 +138,13 @@
     <!-- Batas -->
     <hr class="my-12 border-t-2 border-pink-600 mx-auto w-1/2">
 
-    <div>
-    <!-- Meet Our Team Section -->
+    <!-- Meet Our Team -->
     <div class="container mx-auto py-2 px-4 mb-12">
       <div class="mt-16 mb-12 text-center">
         <h2 class="text-3xl font-bold text-gray-800 mb-12">Meet Our Team</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12" data-aos="fade-up">
-          <div v-for="(member, index) in team.slice(0, 3)" :key="member.name"
-            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300"
-            :data-aos="'fade-up'" :data-aos-delay="index * 100 + 100">
-            <div class="w-40 h-40 mx-auto overflow-hidden rounded-full bg-gray-200 mb-4">
-              <img :src="member.image" :alt="member.name" class="w-full h-40 object-cover">
-            </div>
-            <div class="p-4 bg-pink-50">
-              <h3 class="text-xl font-semibold text-gray-800">{{ member.name }}</h3>
-              <p class="text-gray-600">{{ member.role }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-aos="fade-up">
-          <div v-for="(member, index) in team.slice(3, 7)" :key="member.name"
-            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300"
-            :data-aos="'fade-up'" :data-aos-delay="index * 100 + 400">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div v-for="(member, index) in team" :key="member.name"
+            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300">
             <div class="w-40 h-40 mx-auto overflow-hidden rounded-full bg-gray-200 mb-4">
               <img :src="member.image" :alt="member.name" class="w-full h-40 object-cover">
             </div>
@@ -175,7 +156,6 @@
         </div>
       </div>
     </div>
-  </div>
 
   </div>
 </template>
@@ -184,17 +164,11 @@ export default {
   name: "ContactUs",
   data() {
     return {
-      name: "",
-      email: "",
-      message: ""
-    };
-  },
-  data() {
-    return {
       team: [
         { name: 'Salsa Arifah Zakkiyah', role: 'CEO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355722/arcadia-foto-pribadi/cbv5g9gnita7ii7o3sw8.png' },
         { name: 'Irfan Zharauri Nanda S.', role: 'CTO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355718/arcadia-foto-pribadi/twcw22vudo08n2ctvins.png' },
         { name: 'Abdurahman Dzakky', role: 'CDO', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/r8wb5wlwxqhdyoexc3ob.png' },
+        { name: 'Hafiz Yazid Muhammad', role: 'CIOT', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355719/arcadia-foto-pribadi/lfwxnyu2mufgogo7kdkc.png' },
         { name: 'Masna Abdul Baqi', role: 'Bussiness Analyst', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355719/arcadia-foto-pribadi/pjvx5ra7y8cyet3pky0d.png' },
         { name: 'Farhan Fath Fajar', role: 'IoT Developer', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/woq3fs4aehyrtthkoc8s.png' },
         { name: 'Ghaida Tsuraya Ali', role: 'Digital Marketing', image: 'https://res.cloudinary.com/dasfdo5kq/image/upload/v1736355717/arcadia-foto-pribadi/hd43oasryncpz3njmq7c.png' },

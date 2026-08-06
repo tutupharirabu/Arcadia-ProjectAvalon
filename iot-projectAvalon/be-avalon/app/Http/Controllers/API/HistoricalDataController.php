@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use App\Models\HistoricalData;
 use App\Models\Device;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class HistoricalDataController extends Controller
@@ -48,9 +49,10 @@ class HistoricalDataController extends Controller
             ], 201);
         } catch (\Exception $e) {
             // Respon kesalahan
+            Log::error('Gagal menyimpan data historis untuk device ' . ($validated['devices_id'] ?? 'unknown') . ': ' . $e->getMessage());
+
             return response()->json([
                 'pesan' => 'Gagal menyimpan data historis.',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -74,9 +76,16 @@ class HistoricalDataController extends Controller
                 return response()->json(['pesan' => 'Perangkat belum terhubung dengan pengguna.'], 403);
             }
 
-            // Ambil data historis berdasarkan devices_id
+            // Pastikan pemanggil adalah pemilik perangkat (cegah IDOR)
+            $userId = auth('api')->user()->users_id;
+            if ($device->users_id !== $userId) {
+                return response()->json(['pesan' => 'Perangkat tidak ditemukan.'], 404);
+            }
+
+            // Ambil data historis berdasarkan devices_id (dibatasi 100 baris terbaru)
             $historicalData = HistoricalData::where('devices_id', $devices_id)
                 ->orderBy('created_at', 'desc')
+                ->limit(100)
                 ->get();
 
             // Periksa apakah ada data historis
@@ -91,9 +100,10 @@ class HistoricalDataController extends Controller
             ], 200);
         } catch (\Exception $e) {
             // Respon kesalahan
+            Log::error('Gagal mengambil data historis untuk device ' . $devices_id . ': ' . $e->getMessage());
+
             return response()->json([
                 'pesan' => 'Gagal mengambil data historis.',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
