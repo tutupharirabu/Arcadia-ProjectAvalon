@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json

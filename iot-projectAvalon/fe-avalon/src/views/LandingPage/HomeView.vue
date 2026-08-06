@@ -5,23 +5,21 @@
         class="w-full h-full object-cover opacity-70 hidden md:block">
     </div>
     <!-- Hero Section -->
-    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen "
-      data-aos="fade-up">
-      <h2 class="text-lg font-medium text-pink-600 mb-2" data-aos="fade-up" data-aos-delay="100">
+    <div class="relative z-10 flex flex-col items-center justify-center text-center md:pt-40 min-h-screen ">
+      <h2 class="text-lg font-medium text-pink-600 mb-2">
         Arcadia Flora Tech
       </h2>
 
-      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight" data-aos="fade-up"
-        data-aos-delay="200">
+      <h1 class="text-4xl md:text-6xl font-extrabold text-pink-800 leading-tight">
         Berkebun Cerdas <span class="text-gradient">Menebar Keindahan</span>
       </h1>
 
       <div class="mt-4 px-6 py-4 bg-white bg-opacity-20 rounded-lg shadow-lg text-base md:text-lg text-gray-800"
-        style="max-width: 70%;" data-aos="fade-up" data-aos-delay="300">
+        style="max-width: 70%;">
         Enhance Your Agricultural Yields with Our Smart Technology.
       </div>
 
-      <div class="mt-8 mb-12 flex justify-center" data-aos="fade-up" data-aos-delay="400">
+      <div class="mt-8 mb-12 flex justify-center">
         <router-link to="/arcadia-partner" class="btn-register-now">
           Daftar Arcadia Partner
         </router-link>
@@ -144,10 +142,9 @@
     <div class="container mx-auto py-2 px-4 mb-12">
       <div class="mt-16 mb-12 text-center">
         <h2 class="text-3xl font-bold text-gray-800 mb-12">Meet Our Team</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-aos="fade-up">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div v-for="(member, index) in team" :key="member.name"
-            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300"
-            :data-aos="'fade-up'" :data-aos-delay="index * 100 + 100">
+            class="bg-white shadow-lg rounded-lg overflow-hidden transform hover:scale-105 transition duration-300">
             <div class="w-40 h-40 mx-auto overflow-hidden rounded-full bg-gray-200 mb-4">
               <img :src="member.image" :alt="member.name" class="w-full h-40 object-cover">
             </div>
@@ -165,13 +162,6 @@
 <script>
 export default {
   name: "ContactUs",
-  data() {
-    return {
-      name: "",
-      email: "",
-      message: ""
-    };
-  },
   data() {
     return {
       team: [

@@ -33,10 +33,11 @@ class Notification extends Model
 
     /**
      * Relasi ke model User (admin atau user yang mengirim notifikasi).
+     * Kolom aktual di tabel notifications adalah `admin_id` (bukan `users_id`).
      */
     public function user()
     {
-        return $this->belongsTo(User::class, 'users_id', 'users_id');
+        return $this->belongsTo(User::class, 'admin_id', 'users_id');
     }
 
     /**

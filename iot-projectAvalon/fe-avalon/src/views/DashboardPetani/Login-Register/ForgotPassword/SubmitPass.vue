@@ -35,7 +35,8 @@
     </div>
 
     <!-- Modal untuk Menampilkan Pesan -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Reset Password"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" @click.self="closeModal">
         <div class="bg-white rounded-lg p-6 w-80 shadow-lg">
             <h3 class="text-lg font-bold text-base-content">{{ modalTitle }}</h3>
             <p class="mt-4 text-base-content">{{ modalMessage }}</p>
@@ -48,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import customFetch from '@/utils/customFetch';
 
@@ -63,9 +64,11 @@ const modalTitle = ref('');
 const modalMessage = ref('');
 let redirectAfterModal = false; // Flag untuk menentukan navigasi setelah modal
 let timeoutId = null; // ID untuk timeout otomatis
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
 
 // Fungsi untuk membuka modal
 const openModal = (title, message, redirect = false) => {
+    lastFocusedElement = document.activeElement;
     modalTitle.value = title;
     modalMessage.value = message;
     showModal.value = true;
@@ -84,10 +87,21 @@ const openModal = (title, message, redirect = false) => {
 const closeModal = () => {
     showModal.value = false;
     if (timeoutId) clearTimeout(timeoutId); // Hentikan timeout jika tombol OK ditekan
+    lastFocusedElement?.focus?.();
     if (redirectAfterModal) {
         router.push('/monitoring-arcadia/login'); // Navigasi manual
     }
 };
+
+// Tutup modal saat ESC ditekan
+const handleModalKeydown = (event) => {
+    if (event.key === 'Escape' && showModal.value) {
+        closeModal();
+    }
+};
+
+onMounted(() => window.addEventListener('keydown', handleModalKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleModalKeydown));
 
 const submitResetPassword = async () => {
     isLoading.value = true; // Aktifkan loader

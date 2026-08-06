@@ -36,29 +36,31 @@
 
             <!-- Name Input (Register Only) -->
             <div v-if="props.isRegister" class="form-control mb-4">
-                <label class="label"><span class="label-text">Nama Lengkap</span></label>
-                <input type="text" placeholder="Isi Nama Lengkap" class="input bg-primary-content input-bordered"
-                    v-model="inputForm.name" required />
+                <label class="label" for="fullname"><span class="label-text">Nama Lengkap</span></label>
+                <input type="text" id="fullname" name="fullname" autocomplete="name" placeholder="Isi Nama Lengkap"
+                    class="input bg-primary-content input-bordered" v-model="inputForm.name" required />
             </div>
 
             <!-- Email Input -->
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Email</span></label>
-                <input type="email" placeholder="Isi Email" class="input bg-primary-content input-bordered"
-                    v-model="inputForm.email" required />
+                <label class="label" for="email"><span class="label-text">Email</span></label>
+                <input type="email" id="email" name="email" autocomplete="email" placeholder="Isi Email"
+                    class="input bg-primary-content input-bordered" v-model="inputForm.email" required />
             </div>
 
             <!-- Password Input -->
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Password</span></label>
-                <input type="password" placeholder="Isi Password" class="input input-bordered bg-primary-content"
-                    v-model="inputForm.password" required />
+                <label class="label" for="password"><span class="label-text">Password</span></label>
+                <input type="password" id="password" name="password"
+                    :autocomplete="props.isRegister ? 'new-password' : 'current-password'" placeholder="Isi Password"
+                    class="input input-bordered bg-primary-content" v-model="inputForm.password" required />
             </div>
 
             <!-- Confirm Password Input (Register Only) -->
             <div v-if="props.isRegister" class="form-control mb-4">
-                <label class="label"><span class="label-text">Konfirmasi Password</span></label>
-                <input type="password" placeholder="Konfirmasi Password Anda!"
+                <label class="label" for="password_confirmation"><span class="label-text">Konfirmasi Password</span></label>
+                <input type="password" id="password_confirmation" name="password_confirmation"
+                    autocomplete="new-password" placeholder="Konfirmasi Password Anda!"
                     class="input input-bordered bg-primary-content" v-model="inputForm.password_confirmation"
                     required />
             </div>
@@ -81,7 +83,7 @@
     </div>
 
     <!-- Show errors -->
-    <div class="toast toast-top toast-end" v-if="authStore.isError">
+    <div class="toast toast-top toast-end" v-if="authStore.isError" role="alert" aria-live="polite">
         <div class="alert alert-error">
             <div class="flex items-center">
                 <v-icon name="ri-alert-line" class="h-6 w-6 mr-2" />

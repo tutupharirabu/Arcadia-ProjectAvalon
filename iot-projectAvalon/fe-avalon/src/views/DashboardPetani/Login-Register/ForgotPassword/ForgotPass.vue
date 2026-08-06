@@ -28,7 +28,8 @@
     </div>
 
     <!-- Modal untuk menampilkan pesan -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div v-if="showModal" role="dialog" aria-modal="true" aria-label="Hasil Kirim OTP"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" @click.self="closeModal">
         <div class="bg-white rounded-lg p-6 w-80 shadow-lg">
             <h3 class="text-lg font-bold text-base-content">{{ modalTitle }}</h3>
             <p class="mt-4 text-base-content">{{ modalMessage }}</p>
@@ -41,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import customFetch from '@/utils/customFetch';
 
@@ -56,9 +57,11 @@ const modalMessage = ref('');
 const isLoading = ref(false); // State untuk loader
 let redirectAfterModal = false; // Flag redirect
 let timeoutId = null; // ID untuk timeout
+let lastFocusedElement = null; // Untuk restore fokus setelah modal ditutup
 
 // Fungsi untuk menampilkan modal
 const openModal = (title, message, redirect = false) => {
+    lastFocusedElement = document.activeElement;
     modalTitle.value = title;
     modalMessage.value = message;
     showModal.value = true;
@@ -77,10 +80,21 @@ const openModal = (title, message, redirect = false) => {
 const closeModal = () => {
     showModal.value = false;
     if (timeoutId) clearTimeout(timeoutId); // Hentikan timeout jika tombol OK diklik
+    lastFocusedElement?.focus?.();
     if (redirectAfterModal) {
         router.push({ name: 'OTPForgotPassword' });
     }
 };
+
+// Tutup modal saat ESC ditekan
+const handleModalKeydown = (event) => {
+    if (event.key === 'Escape' && showModal.value) {
+        closeModal();
+    }
+};
+
+onMounted(() => window.addEventListener('keydown', handleModalKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleModalKeydown));
 
 const submitForgotPassword = async () => {
     isLoading.value = true; // Aktifkan loader
