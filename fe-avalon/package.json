@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@schedule-x/events-service": "^2.12.1",
-    "@schedule-x/theme-shadcn": "^2.11.0",
+    "@schedule-x/theme-shadcn": "^4.6.1",
     "@schedule-x/vue": "^2.9.0",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
