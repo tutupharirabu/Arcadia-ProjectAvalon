@@ -1,5 +1,5 @@
 <template>
-<footer class="footer text-black px-10 py-8" style="background-color: #FFF9E2;">   
+  <footer class="footer text-black px-10 py-8" style="background-color: #FFF9E2;">
     <div class="container mx-auto flex flex-col justify-between space-y-8 md:flex-row md:space-y-0">
       <!-- Bagian Kiri -->
       <div class="md:w-1/3 space-y-6 text-center md:text-left">
@@ -37,12 +37,14 @@
                 </router-link>
               </li>
               <li>
-                <a href="https://www.instagram.com/arcadiafloratech/" target="_blank" rel="noopener noreferrer" class="hover:text-pink-500">
+                <a href="https://www.instagram.com/arcadiafloratech/" target="_blank" rel="noopener noreferrer"
+                  class="hover:text-pink-500">
                   Contact Via Instagram
                 </a>
               </li>
               <li>
-                <a href="https://wa.me/6285121072770/" target="_blank" rel="noopener noreferrer" class="hover:text-pink-500">
+                <a href="https://wa.me/6285121072770/" target="_blank" rel="noopener noreferrer"
+                  class="hover:text-pink-500">
                   Contact Via Whatsapp
                 </a>
               </li>
@@ -86,7 +88,7 @@
       </div>
     </div>
   </footer>
-  <div class="grid grid-cols-1 place-items-center " style="background-color: #FFF9E2;" >
+  <div class="grid grid-cols-1 place-items-center " style="background-color: #FFF9E2;">
     <p class="text-sm font-semibold text-gray-600 mb-4">
       © 2024 Arcadia. All rights reserved.
     </p>
@@ -103,9 +105,11 @@ a:hover {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+
   .footer .container .md\:w-1\/3 {
     width: 100%;
   }
+
   .footer .container .md\:w-2\/3 {
     width: 100%;
   }
