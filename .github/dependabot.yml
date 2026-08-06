@@ -5,18 +5,80 @@ updates:
     directory: /be-avalon
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "07:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      composer-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Predis 3.x butuh PHP 8.4+ dan refactor koneksi — tunda sampai migrasi terjadwal
+      - dependency-name: "predis/predis"
+        versions: [">=3.0.0"]
 
   # Bridge MQTT (npm)
   - package-ecosystem: npm
     directory: /be-avalon/node_mqtt_server
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "07:30"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      mqtt-bridge-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Express 5 & dotenv 17 membawa breaking API — butuh pengujian terpisah
+      - dependency-name: "express"
+        versions: [">=5.0.0"]
+      - dependency-name: "dotenv"
+        versions: [">=17.0.0"]
 
   # Frontend Vue (npm)
   - package-ecosystem: npm
     directory: /fe-avalon
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "08:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      fe-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Major bump yang butuh migrasi terpisah (belum siap di-merge):
+      - dependency-name: "tailwindcss"
+        versions: [">=4.0.0"]
+      - dependency-name: "pinia"
+        versions: [">=3.0.0"]
+      - dependency-name: "@schedule-x/vue"
+        versions: [">=3.0.0"]
+      - dependency-name: "@schedule-x/theme-shadcn"
+        versions: [">=3.0.0"]
