@@ -17,7 +17,7 @@
     "@schedule-x/theme-shadcn": "^2.11.0",
     "@schedule-x/vue": "^2.9.0",
     "axios": "^1.7.9",
-    "chart.js": "^4.4.7",
+    "chart.js": "^4.5.1",
     "oh-vue-icons": "^1.0.0-rc3",
     "pinia": "^2.2.6",
     "vue": "^3.5.12",
