@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Laravel)
+    runs-on: ubuntu-latest
+    env:
+      # Dummy key untuk test di CI (bukan secret) — Laravel butuh APP_KEY untuk
+      # session/crypt saat test; tymon/jwt-auth mem-fallback ke APP_KEY bila JWT_SECRET kosong.
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    defaults:
+      run:
+        working-directory: be-avalon
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # composer.json: "php": "^8.2"
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, fileinfo, bcmath
+          coverage: none
+          cache: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax check (app, routes, config, bootstrap)
+        run: |
+          # xargs exit 123 bila salah satu file gagal lint → job gagal
+          find app routes config bootstrap -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run test suite (sqlite :memory:)
+        run: 'DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan test'
+
+  frontend:
+    name: Frontend (Vue)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fe-avalon
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: fe-avalon/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Component tests (Cypress)
+        timeout-minutes: 20
+        run: |
+          npx cypress install
+          npm run test:unit
+
+  node-bridge:
+    name: Node bridge (node_mqtt_server)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: be-avalon/node_mqtt_server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: be-avalon/node_mqtt_server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check (node --check)
+        run: |
+          node --check serverMonitoring.js
+          node --check serverWatering.js
+          node --check middleware/authMiddleware.js
+          node --check cloudinaryConfig.js
+          node --check redisClient.js
+
+      - name: npm audit (high severity)
+        # Gagal jika ada CVE high/critical pada dependency langsung
+        run: npm audit --audit-level=high

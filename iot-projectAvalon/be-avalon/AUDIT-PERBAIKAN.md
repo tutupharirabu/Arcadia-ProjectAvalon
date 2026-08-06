@@ -10,6 +10,47 @@ Ini murni dokumen pemetaan (belum ada kode yang diubah). Eksekusi perbaikan seba
 
 ---
 
+## Status Eksekusi (2026-08-06)
+
+Bagian ini mencatat progres perbaikan di atas. **Temuan lama di bagian bawah tidak diubah** — statusnya tercermin di tabel berikut. Verifikasi dilakukan langsung ke source code (grep/read) sebelum klaim ditulis.
+
+### Wave 1 — Keamanan kritis: ✅ SELESAI
+
+| # | Item | Status | Verifikasi (2026-08-06) |
+|---|---|---|---|
+| 1, 11 | Node auth: shared-secret pada `/api/water-pump/control` & `/api/store-token` + hardening | ✅ | `middleware/authMiddleware.js` — `requireSharedSecret` (header `x-shared-secret`, perbandingan constant-time, **fail-closed** bila env kosong) + `authenticateToken` (JWT) |
+| 2, 4, 7, 8, 9 | IDOR ownership (pompa, alarm, device, data historis, notifikasi) | ✅ | Trait `app/Http/Controllers/API/Traits/HasOwnershipChecks.php` dipakai `WaterPumpController`, `WaterPumpAlarmController`, `NotificationController`; cek inline `users_id !== $userId` di `DeviceController`, `HistoricalDataController`, `NotificationRecipientController` |
+| 3 | Routing alarm salah bind → `WaterPumpAlarmController` | ✅ | `routes/api.php:74-76` — `/v1/water-alarm` ter-bind ke `WaterPumpAlarmController::index/updateOrCreate/destroy` |
+| 5 | OTP di-scope ke `users_id` pemanggil | ✅ | `AuthController::verificationEmail` di-scope per-user |
+| 6 | Rate limiting | ✅ | `bootstrap/app.php` — `throttle:api` (60/menit) global + limiter `auth` (5/menit) untuk login/OTP/forgot-password |
+| 10 | `env()` langsung di controller → `config()` + `.env.example` lengkap | ✅ | Tidak ada lagi pemanggilan `env(` di `app/`; `.env.example` memuat `JWT_*`, `NODE_API_URL_*`, `SHARED_SECRET` |
+| 16 | Stop kebocoran detail error ke klien | ✅ | `$e->getMessage()`/`$response->body()` tidak lagi diteruskan mentah |
+| 21 | Scheduler Log fix | ✅ | `bootstrap/app.php` — `onSuccess`/`onFailure` menulis ke Log |
+| — | Login resilience, idempotensi jalur ON pompa, seeder aman | ✅ | Diverifikasi pada eksekusi Wave 1 |
+| 1 (CORS) | CORS node di-pin | ✅ | `serverMonitoring.js`/`serverWatering.js` — origin dari `FRONTEND_URL` (comma-separated), bukan `*` |
+| — | FE: hydrate auth, interceptor, router fixes | ✅ | `fe-avalon/src/utils/customFetch.js` — request interceptor (suntik token), response interceptor (401 → logout otomatis) |
+
+### Wave 2 — selesai (2026-08-06)
+
+| Item | Status |
+|---|---|
+| Migrations hardening | ✅ — index `is_active`, composite `historical_data(devices_id, created_at)`, timestamps `otp_codes`, FK CASCADE, dedup + unique alarm (`2026_08_06_000000_add_hardening_indexes_to_iot_tables.php`) |
+| Test suite permanen | ✅ — `tests/Feature/{AuthTest,IdorTest,RateLimitTest,WaterAlarmAndAdminGateTest}.php` (18 test, sqlite in-memory) |
+| Forms landing & polling/chart FE | ✅ — Contact & ArcadiaPartner terhubung WhatsApp; polling backoff + pause saat tab hidden; chart tanpa re-create |
+| a11y | ✅ — label/for, modal role=dialog + ESC, focus-within, tabular-nums, kontras theme (accent 8.2:1) |
+| CI/CD | ✅ — `.github/workflows/ci.yml` (3 jobs) + `dependabot.yml`; README 3 komponen ditulis ulang |
+| Deploy | ✅ — Vercel/Railway dihapus; target deploy VPS (nginx + PHP-FPM + Redis + 2 proses node) |
+
+### Aksi yang dibutuhkan dari user
+
+1. **Ubah repo ke `private`** — riwayat commit sebelum perbaikan sempat publik.
+2. **Rotasi semua kredensial** (JWT_SECRET, SHARED_SECRET, MQTT, Cloudinary, DB) karena repo pernah publik.
+3. **Set `SHARED_SECRET` dengan nilai SAMA** di `.env` Laravel **dan** `.env` node server (termasuk environment produksi VPS).
+4. **`npm install` di `be-avalon/node_mqtt_server`** sebelum menjalankan `npm start` / `node serverWatering.js` (node_modules di mesin dev tidak ter-commit).
+5. Set `NODE_API_URL_1`/`NODE_API_URL_2` & `FRONTEND_URL` di environment produksi setelah deploy.
+
+---
+
 ## CRITICAL — akses fisik tidak sah / akun bisa diambil alih / fitur inti rusak total
 
 1. **Kontrol pompa air di sisi Node sama sekali tanpa autentikasi**
