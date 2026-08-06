@@ -17,9 +17,9 @@ graph LR
 
 | Komponen | Stack | Dokumen |
 |---|---|---|
-| `be-avalon` | Laravel 11 API (JWT auth, scheduler alarm, notifikasi) | [README](be-avalon/README.md) |
-| `be-avalon/node_mqtt_server` | Node.js bridge MQTT ↔ Laravel (2 proses: monitoring & watering) | [README](be-avalon/node_mqtt_server/README.md) |
-| `fe-avalon` | Vue 3 + Vite + Pinia + Tailwind/daisyUI + Chart.js | [README](fe-avalon/README.md) |
+| `be-avalon` | Laravel 11 API (JWT auth, scheduler alarm, notifikasi) | [README](iot-projectAvalon/be-avalon/README.md) |
+| `be-avalon/node_mqtt_server` | Node.js bridge MQTT ↔ Laravel (2 proses: monitoring & watering) | [README](iot-projectAvalon/be-avalon/node_mqtt_server/README.md) |
+| `fe-avalon` | Vue 3 + Vite + Pinia + Tailwind/daisyUI + Chart.js | [README](iot-projectAvalon/fe-avalon/README.md) |
 
 ## Alur Branch (SDLC)
 
@@ -86,4 +86,4 @@ cd fe-avalon && npm run test:unit         # Cypress component
 
 ## Status Audit
 
-Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](be-avalon/AUDIT-PERBAIKAN.md).
+Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](iot-projectAvalon/be-avalon/AUDIT-PERBAIKAN.md).

@@ -63,7 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (error) {
             isError.value = true;
-            const errors = error.response?.data.error || { message: 'An error occurred' };
+            const data = error.response?.data || {};
+            const errors = data.error || data.message || 'Terjadi kesalahan. Silakan coba lagi.';
 
             if (typeof errors === 'object') {
                 errMsg.value = Object.values(errors)
@@ -99,7 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
             router.push('/verifikasiEmail')
         } catch (error) {
             isError.value = true;
-            const errors = error.response?.data.error || { message: 'An error occurred' };
+            const data = error.response?.data || {};
+            const errors = data.error || data.message || 'Terjadi kesalahan. Silakan coba lagi.';
 
             if (typeof errors === 'object') {
                 errMsg.value = Object.values(errors)

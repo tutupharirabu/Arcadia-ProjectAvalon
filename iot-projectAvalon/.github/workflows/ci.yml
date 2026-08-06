@@ -22,7 +22,7 @@ jobs:
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     defaults:
       run:
-        working-directory: be-avalon
+        working-directory: iot-projectAvalon/be-avalon
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: fe-avalon
+        working-directory: iot-projectAvalon/fe-avalon
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: fe-avalon/package-lock.json
+          cache-dependency-path: iot-projectAvalon/fe-avalon/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: be-avalon/node_mqtt_server
+        working-directory: iot-projectAvalon/be-avalon/node_mqtt_server
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,7 +90,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: be-avalon/node_mqtt_server/package-lock.json
+          cache-dependency-path: iot-projectAvalon/be-avalon/node_mqtt_server/package-lock.json
 
       - name: Install dependencies
         run: npm ci
