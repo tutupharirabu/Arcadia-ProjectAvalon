@@ -2,7 +2,7 @@
 
 Platform IoT untuk **monitoring sensor & kontrol pompa air** secara real-time: dashboard petani, manajemen device (QR/barcode), kalender alarm terjadwal, notifikasi, dan grafik data sensor. Backend di-orchestrasi lewat bridge MQTT ke perangkat fisik.
 
-📚 **Dokumentasi lengkap (wiki)**: [docs/](docs/README.md) — arsitektur, alur branch/rilis, CI/CD, keamanan, dan troubleshooting.
+📚 **Dokumentasi lengkap (wiki)**: [GitHub Wiki](https://github.com/tutupharirabu/Arcadia-ProjectAvalon/wiki) — arsitektur, alur branch/rilis, CI/CD, keamanan, dan troubleshooting.
 
 ## Arsitektur
 
@@ -36,7 +36,7 @@ improvement/* (fitur/perbaikan)
 - **`canary`** — staging; pratinjau sebelum produksi.
 - **`dev`** — integrasi semua fitur; `dev-be` & `dev-fe` untuk kerja per-area (backend/frontend).
 
-`canary` & `main` dilindungi branch protection: perubahan wajib lewat PR, **CI 3 job hijau** (Backend Laravel, Frontend Vue, Node bridge) + branch up-to-date (strict). Rincian alur & pola rilis: [docs/sdlc-branch-strategy.md](docs/sdlc-branch-strategy.md).
+`canary` & `main` dilindungi branch protection: perubahan wajib lewat PR, **CI 3 job hijau** (Backend Laravel, Frontend Vue, Node bridge) + branch up-to-date (strict). Rincian alur & pola rilis: [Wiki — SDLC & Branch](https://github.com/tutupharirabu/Arcadia-ProjectAvalon/wiki/SDLC-Branch-Strategy).
 
 ## Quick Start (lokal)
 
@@ -79,7 +79,7 @@ npm run dev
 - Token JWT di-blacklist saat logout; password bcrypt (12 rounds).
 - CORS dipin ke `FRONTEND_URL`; `.env` ter-gitignore di semua komponen.
 - Validasi `deviceId` di bridge MQTT (anti-SSRF); kredensial tidak di-log; Dependabot security updates & CodeQL Advanced aktif (0 alert terbuka).
-- Riwayat lengkap hardening: [docs/keamanan.md](docs/keamanan.md).
+- Riwayat lengkap hardening: [Wiki — Keamanan](https://github.com/tutupharirabu/Arcadia-ProjectAvalon/wiki/Keamanan).
 
 ## Testing
 
@@ -90,11 +90,11 @@ cd fe-avalon && npm run test:unit         # Cypress component
 
 ## CI/CD
 
-Workflow aktif: **CI** (3 job), **CodeQL Advanced**, **Copilot**, **Dependabot Updates**, **GitHub Advanced Security** — detail di [docs/ci-cd.md](docs/ci-cd.md).
+Workflow aktif: **CI** (3 job bertahap), **CodeQL Advanced**, **Copilot**, **Dependabot Updates**, **GitHub Advanced Security** — detail di [Wiki — CI/CD](https://github.com/tutupharirabu/Arcadia-ProjectAvalon/wiki/CI-CD).
 
 ## Status Audit
 
-Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](be-avalon/AUDIT-PERBAIKAN.md) dan [docs/troubleshooting.md](docs/troubleshooting.md).
+Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](be-avalon/AUDIT-PERBAIKAN.md) dan [Wiki — Troubleshooting](https://github.com/tutupharirabu/Arcadia-ProjectAvalon/wiki/Troubleshooting).
 
 ## API Documentation
 
