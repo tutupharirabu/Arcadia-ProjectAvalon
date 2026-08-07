@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const axios = require("axios");
 const schedule = require("node-schedule");
+const { rateLimit } = require("express-rate-limit");
 const { randomUUID } = require("crypto");
 const QRCode = require("qrcode");
 
@@ -58,6 +59,18 @@ const DEVICE_CACHE_TTL_MS = 5 * 60 * 1000; // TTL cache keberadaan device (5 men
 const ERROR_CACHE_TTL_MS = 30 * 1000; // TTL cache pendek saat pengecekan gagal (Laravel down)
 const DEVICE_STATE_TTL_MS = 10 * 60 * 1000; // TTL state per-device (10 menit)
 
+// Validasi Device ID: hanya alfanumerik, tanda hubung, dan underscore (cegah SSRF/path traversal)
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+// Rate limiting untuk endpoint API (per IP)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // jendela 15 menit
+    limit: 60, // maks 60 permintaan per jendela
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { message: "Terlalu banyak permintaan. Silakan coba lagi nanti." },
+});
+
 // Fungsi untuk mengirim token ke Redis
 async function storeUserToken(users_id, token) {
     if (!users_id || !token) {
@@ -69,7 +82,7 @@ async function storeUserToken(users_id, token) {
         console.log(`[POST] Token untuk pengguna ${users_id} berhasil disimpan.`);
         return { status: "success", message: "Token berhasil disimpan." };
     } catch (error) {
-        console.error(`[ERROR] Gagal menyimpan token untuk pengguna ${users_id}:`, error.message);
+        console.error("[ERROR] Gagal menyimpan token untuk pengguna:", users_id, "->", error.message);
         throw new Error("[ERROR] Gagal menyimpan token ke Redis.");
     }
 }
@@ -430,7 +443,7 @@ async function processQueue() {
                 }
             } catch (error) {
                 // Satu pesan gagal tidak boleh menghentikan pemrosesan pesan lainnya
-                console.error(`[ERROR] Gagal memproses pesan dari topik ${topic}:`, error.message);
+                console.error("[ERROR] Gagal memproses pesan dari topik:", topic, "->", error.message);
             }
         }
     } finally {
@@ -448,7 +461,7 @@ mqttClient.on("connect", () => {
         if (err) {
             console.error("[ERROR] Gagal berlangganan wildcard topik:", err.message);
         } else {
-            console.log(`[INFO] Berhasil berlangganan wildcard topik: ${wildcardTopic}`);
+            console.log("[INFO] Berhasil berlangganan wildcard topik feeds.");
         }
     });
 });
@@ -481,7 +494,7 @@ mqttClient.on("reconnect", () => {
 });
 
 // Endpoint untuk menyimpan token JWT (server-to-server dari Laravel)
-app.post("/api/store-token", requireSharedSecret, async (req, res) => {
+app.post("/api/store-token", apiLimiter, requireSharedSecret, async (req, res) => {
     const { token, users_id } = req.body;
 
     if (!token || !users_id) {
@@ -498,8 +511,14 @@ app.post("/api/store-token", requireSharedSecret, async (req, res) => {
 });
 
 // Endpoint untuk menampilkan data parameter ke dashboard dari Redis
-app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
+app.get("/api/dashboard/:deviceId", apiLimiter, authenticateToken, async (req, res) => {
     const { deviceId } = req.params;
+
+    // Validasi Device ID sebelum dipakai di URL (cegah SSRF)
+    if (!DEVICE_ID_RE.test(deviceId)) {
+        return res.status(400).json({ message: "Device ID tidak valid." });
+    }
+
     const tokenKey = `jwt:user:${req.user.sub}`;
     let token;
 
@@ -521,7 +540,7 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
         }
 
         // Validasi apakah perangkat terhubung dengan pengguna
-        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-private/${deviceId}`, {
+        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-private/${encodeURIComponent(deviceId)}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -558,7 +577,7 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
                     timestamp: parsedValue.timestamp,
                 };
             } catch (err) {
-                console.error(`Gagal parse data Redis untuk ${key}:`, err.message);
+                console.error("Gagal parse data Redis untuk:", key, "->", err.message);
             }
         }
 
@@ -569,7 +588,7 @@ app.get("/api/dashboard/:deviceId", authenticateToken, async (req, res) => {
         });
     } catch (error) {
         // Detail error hanya untuk log server — jangan bocorkan ke klien
-        console.error(`Kesalahan saat memproses data dashboard untuk Device ID ${deviceId}:`, error.message);
+        console.error("Kesalahan saat memproses data dashboard untuk Device ID:", deviceId, "->", error.message);
         res.status(500).json({
             message: "Kesalahan server saat memproses permintaan.",
         });
