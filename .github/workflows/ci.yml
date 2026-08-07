@@ -50,6 +50,8 @@ jobs:
   frontend:
     name: Frontend (Vue)
     runs-on: ubuntu-latest
+    # Bertahap: tunggu backend & node bridge aman dulu sebelum build frontend
+    needs: [node-bridge]
     defaults:
       run:
         working-directory: fe-avalon
@@ -79,6 +81,8 @@ jobs:
   node-bridge:
     name: Node bridge (node_mqtt_server)
     runs-on: ubuntu-latest
+    # Bertahap: tunggu backend aman dulu sebelum menjalankan bridge MQTT
+    needs: [backend]
     defaults:
       run:
         working-directory: be-avalon/node_mqtt_server
