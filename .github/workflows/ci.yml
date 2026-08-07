@@ -47,6 +47,9 @@ jobs:
       - name: Run test suite (sqlite :memory:)
         run: 'DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan test'
 
+      - name: PHPStan static analysis (Larastan)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
   frontend:
     name: Frontend (Vue)
     runs-on: ubuntu-latest

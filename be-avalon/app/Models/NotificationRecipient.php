@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -27,7 +28,7 @@ class NotificationRecipient extends Model
     /**
      * Relasi ke model Notification.
      */
-    public function notification()
+    public function notification(): BelongsTo
     {
         return $this->belongsTo(Notification::class, 'notifications_id', 'notifications_id');
     }
@@ -35,7 +36,7 @@ class NotificationRecipient extends Model
     /**
      * Relasi ke model User (penerima notifikasi jika spesifik user).
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'users_id', 'users_id');
     }
@@ -43,7 +44,7 @@ class NotificationRecipient extends Model
     /**
      * Relasi ke model Role (penerima notifikasi berdasarkan role).
      */
-    public function role()
+    public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'roles_id', 'roles_id');
     }
