@@ -53,6 +53,9 @@ const DEVICE_CACHE_TTL_MS = 5 * 60 * 1000; // TTL cache keberadaan device (5 men
 const ERROR_CACHE_TTL_MS = 30 * 1000; // TTL cache pendek saat pengecekan gagal (Laravel down)
 const DEVICE_STATE_TTL_MS = 10 * 60 * 1000; // TTL state per-device (10 menit)
 
+// Validasi Device ID: hanya alfanumerik, tanda hubung, dan underscore (cegah SSRF/path traversal)
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
 // Fungsi untuk generate QR Code
 async function generateQRCode(deviceId) {
     try {
@@ -105,13 +108,19 @@ function getCachedDeviceKnown(deviceId) {
 
 // Fungsi untuk memeriksa apakah perangkat sudah ada di Laravel (dengan cache TTL)
 async function checkDeviceExist(deviceId) {
+    // Tolak Device ID yang tidak valid sebelum dipakai di URL (cegah SSRF)
+    if (!DEVICE_ID_RE.test(deviceId)) {
+        console.warn("[WARNING] Device ID ditolak karena tidak valid:", deviceId);
+        return false;
+    }
+
     const cached = getCachedDeviceKnown(deviceId);
     if (cached !== null) {
         return cached;
     }
 
     try {
-        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-public/${deviceId}`, {
+        const response = await axios.get(`${process.env.LARAVEL_API_URL}/device/check-public/${encodeURIComponent(deviceId)}`, {
             timeout: HTTP_TIMEOUT_MS,
         });
         if (response.data.status === "success") {
@@ -121,7 +130,7 @@ async function checkDeviceExist(deviceId) {
         return false;
     } catch (error) {
         if (error.response && error.response.status === 404) {
-            console.log(`[ERROR] Perangkat dengan Device ID ${deviceId} belum ada.`);
+            console.log("[ERROR] Perangkat dengan Device ID belum ada:", deviceId);
             setDeviceKnown(deviceId, false);
             return false;
         }
@@ -289,7 +298,7 @@ async function processQueue() {
                 }
             } catch (error) {
                 // Satu pesan gagal tidak boleh menghentikan pemrosesan pesan lainnya
-                console.error(`[ERROR] Gagal memproses pesan dari topik ${topic}:`, error.message);
+                console.error("[ERROR] Gagal memproses pesan dari topik:", topic, "->", error.message);
             }
         }
 
@@ -315,7 +324,7 @@ mqttClient.on("connect", () => {
         if (err) {
             console.error("[ERROR] Gagal berlangganan wildcard topik:", err.message);
         } else {
-            console.log(`[INFO] Berhasil berlangganan wildcard topik: ${wildcardTopic}`);
+            console.log("[INFO] Berhasil berlangganan wildcard topik feeds.");
         }
     });
 });
