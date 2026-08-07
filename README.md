@@ -2,11 +2,13 @@
 
 Platform IoT untuk **monitoring sensor & kontrol pompa air** secara real-time: dashboard petani, manajemen device (QR/barcode), kalender alarm terjadwal, notifikasi, dan grafik data sensor. Backend di-orchestrasi lewat bridge MQTT ke perangkat fisik.
 
+📚 **Dokumentasi lengkap (wiki)**: [docs/](docs/README.md) — arsitektur, alur branch/rilis, CI/CD, keamanan, dan troubleshooting.
+
 ## Arsitektur
 
 ```mermaid
 graph LR
-    FE[fe-avalon<br/>Vue 3 + Vite + Pinia] -->|REST /api/v1| BE[be-avalon<br/>Laravel 11 API]
+    FE[fe-avalon<br/>Vue 3 + Vite + Pinia] -->|REST /api/v1| BE[be-avalon<br/>Laravel 12 API]
     FE -->|REST /api/dashboard| NODE[be-avalon/node_mqtt_server<br/>Node.js + Express]
     BE -->|server-to-server| NODE
     NODE -->|MQTT publish/subscribe| BROKER[MQTT Broker<br/>EMQX / Mosquitto]
@@ -17,7 +19,7 @@ graph LR
 
 | Komponen | Stack | Dokumen |
 |---|---|---|
-| `be-avalon` | Laravel 11 API (JWT auth, scheduler alarm, notifikasi) | [README](be-avalon/README.md) |
+| `be-avalon` | Laravel 12.65 API (JWT auth, scheduler alarm, notifikasi) | [README](be-avalon/README.md) |
 | `be-avalon/node_mqtt_server` | Node.js bridge MQTT ↔ Laravel (2 proses: monitoring & watering) | [README](be-avalon/node_mqtt_server/README.md) |
 | `fe-avalon` | Vue 3 + Vite + Pinia + Tailwind/daisyUI + Chart.js | [README](fe-avalon/README.md) |
 
@@ -30,11 +32,11 @@ improvement/* (fitur/perbaikan)
                             └─▶ PR → main (produksi)
 ```
 
-- **`dev`** — branch default; integrasi semua fitur.
+- **`main`** — produksi; **default branch**.
 - **`canary`** — staging; pratinjau sebelum produksi.
-- **`main`** — produksi.
+- **`dev`** — integrasi semua fitur; `dev-be` & `dev-fe` untuk kerja per-area (backend/frontend).
 
-`canary` & `main` dilindungi branch protection: **1 review + CI 3 job hijau** (Backend Laravel, Frontend Vue, Node bridge) + branch up-to-date. CI & Dependabot berjalan otomatis (lihat `.github/`).
+`canary` & `main` dilindungi branch protection: perubahan wajib lewat PR, **CI 3 job hijau** (Backend Laravel, Frontend Vue, Node bridge) + branch up-to-date (strict). Rincian alur & pola rilis: [docs/sdlc-branch-strategy.md](docs/sdlc-branch-strategy.md).
 
 ## Quick Start (lokal)
 
@@ -72,10 +74,12 @@ npm run dev
 ## Keamanan
 
 - Ownership data diverifikasi di semua endpoint (trait `HasOwnershipChecks`) — anti-IDOR.
-- Rate limiting: `throttle:api` (60/menit) + `throttle:auth` (5/menit) untuk login/OTP/forgot-password.
+- Rate limiting: `throttle:api` (60/menit) + `throttle:auth` (5/menit) untuk login/OTP/forgot-password; endpoint Node bridge pakai `express-rate-limit` (60/15 menit).
 - Endpoint server-to-server node memakai `x-shared-secret` (constant-time, fail-closed).
 - Token JWT di-blacklist saat logout; password bcrypt (12 rounds).
 - CORS dipin ke `FRONTEND_URL`; `.env` ter-gitignore di semua komponen.
+- Validasi `deviceId` di bridge MQTT (anti-SSRF); kredensial tidak di-log; Dependabot security updates & CodeQL Advanced aktif (0 alert terbuka).
+- Riwayat lengkap hardening: [docs/keamanan.md](docs/keamanan.md).
 
 ## Testing
 
@@ -84,9 +88,13 @@ cd be-avalon && php artisan test          # 18 test (auth, IDOR, rate limit, ala
 cd fe-avalon && npm run test:unit         # Cypress component
 ```
 
+## CI/CD
+
+Workflow aktif: **CI** (3 job), **CodeQL Advanced**, **Copilot**, **Dependabot Updates**, **GitHub Advanced Security** — detail di [docs/ci-cd.md](docs/ci-cd.md).
+
 ## Status Audit
 
-Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](be-avalon/AUDIT-PERBAIKAN.md).
+Riwayat audit & perbaikan terdokumentasi di [`be-avalon/AUDIT-PERBAIKAN.md`](be-avalon/AUDIT-PERBAIKAN.md) dan [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ## API Documentation
 

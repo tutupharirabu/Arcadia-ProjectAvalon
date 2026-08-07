@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\User;
 use App\Models\NotificationRecipient;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -24,7 +25,7 @@ class Role extends Model
      *
      * @return HasMany<User, $this>
      */
-    public function list_user()
+    public function list_user(): HasMany
     {
         return $this->hasMany(User::class, 'roles_id', 'roles_id');
     }
@@ -34,7 +35,7 @@ class Role extends Model
      *
      * @return HasMany<NotificationRecipient, $this>
      */
-    public function notifications()
+    public function notifications(): HasMany
     {
         return $this->hasMany(NotificationRecipient::class, 'roles_id', 'roles_id');
     }

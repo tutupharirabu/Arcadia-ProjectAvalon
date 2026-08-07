@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\Notification;
 use App\Models\WaterPumpLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Device extends Model
@@ -52,7 +54,7 @@ class Device extends Model
     /**
      * Relasi ke model User.
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'users_id', 'users_id');
     }
@@ -60,7 +62,7 @@ class Device extends Model
     /**
      * Relasi ke model HistoricalData.
      */
-    public function historicalData()
+    public function historicalData(): HasMany
     {
         return $this->hasMany(HistoricalData::class, 'devices_id', 'devices_id');
     }
@@ -68,7 +70,7 @@ class Device extends Model
     /**
      * Relasi ke model WaterPumpLog
      */
-    public function waterPumpLogs()
+    public function waterPumpLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(WaterPumpLog::class, 'devices_id', 'devices_id');
     }
@@ -76,7 +78,7 @@ class Device extends Model
     /**
      * Relasi ke tabel notifications (notifikasi yang dikirim oleh perangkat ini).
      */
-    public function notifications()
+    public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'devices_id', 'devices_id');
     }
