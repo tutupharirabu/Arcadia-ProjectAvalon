@@ -8,7 +8,7 @@
         "php": "^8.2",
         "laravel/framework": "^12.60",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.9",
+        "laravel/tinker": "^3.0",
         "predis/predis": "^2.3",
         "tymon/jwt-auth": "^2.1"
     },
